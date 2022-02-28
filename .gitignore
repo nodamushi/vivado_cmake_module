@@ -1,0 +1,5 @@
+.Xil/
+*.prj/
+vivado_*
+*.jou
+*.log
