@@ -1,5 +1,6 @@
 .Xil/
 *.prj/
+bin/
 vivado_*
 *.jou
 *.log

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# myrtl
+# myrtl2, myrtl
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -158,6 +158,7 @@ xilinx.com:ip:proc_sys_reset:5.0\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
+myrtl2\
 myrtl\
 "
 
@@ -223,7 +224,8 @@ proc create_root_design { parentCell } {
   # Create interface ports
 
   # Create ports
-  set led [ create_bd_port -dir O -from 2 -to 0 led ]
+  set led0 [ create_bd_port -dir O -from 2 -to 0 led0 ]
+  set led1 [ create_bd_port -dir O -from 2 -to 0 led1 ]
   set reset [ create_bd_port -dir I -type rst reset ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
@@ -240,6 +242,17 @@ proc create_root_design { parentCell } {
    CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz
 
+  # Create instance: myrtl2_0, and set properties
+  set block_name myrtl2
+  set block_cell_name myrtl2_0
+  if { [catch {set myrtl2_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $myrtl2_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create instance: myrtl_0, and set properties
   set block_name myrtl
   set block_cell_name myrtl_0
@@ -258,11 +271,12 @@ proc create_root_design { parentCell } {
   set rst_clk_wiz_100M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_clk_wiz_100M ]
 
   # Create port connections
-  connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins myrtl_0/clk] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins myrtl2_0/clk] [get_bd_pins myrtl_0/clk] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_locked [get_bd_pins clk_wiz/locked] [get_bd_pins rst_clk_wiz_100M/dcm_locked]
-  connect_bd_net -net myrtl_0_led [get_bd_ports led] [get_bd_pins myrtl_0/led]
+  connect_bd_net -net myrtl2_0_led [get_bd_ports led1] [get_bd_pins myrtl2_0/led]
+  connect_bd_net -net myrtl_0_led [get_bd_ports led0] [get_bd_pins myrtl_0/led]
   connect_bd_net -net reset_rtl_1 [get_bd_ports reset] [get_bd_pins clk_wiz/reset] [get_bd_pins rst_clk_wiz_100M/ext_reset_in]
-  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins myrtl_0/resetn] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
+  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins myrtl2_0/resetn] [get_bd_pins myrtl_0/resetn] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
   connect_bd_net -net sys_clock_1 [get_bd_ports sys_clock] [get_bd_pins clk_wiz/clk_in1]
 
   # Create address segments
