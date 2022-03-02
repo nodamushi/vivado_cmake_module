@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# myrtl2, myrtl
+# myrtl
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -132,6 +132,8 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:6.0\
+nodamushi:hls:hlsled:1.0\
+xilinx.com:ip:jtag_axi:1.2\
 xilinx.com:ip:proc_sys_reset:5.0\
 "
 
@@ -158,7 +160,6 @@ xilinx.com:ip:proc_sys_reset:5.0\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-myrtl2\
 myrtl\
 "
 
@@ -242,17 +243,18 @@ proc create_root_design { parentCell } {
    CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz
 
-  # Create instance: myrtl2_0, and set properties
-  set block_name myrtl2
-  set block_cell_name myrtl2_0
-  if { [catch {set myrtl2_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $myrtl2_0 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-  
+  # Create instance: hlsled_0, and set properties
+  set hlsled_0 [ create_bd_cell -type ip -vlnv nodamushi:hls:hlsled:1.0 hlsled_0 ]
+
+  # Create instance: jtag_axi_0, and set properties
+  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
+
+  # Create instance: jtag_axi_0_axi_periph, and set properties
+  set jtag_axi_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 jtag_axi_0_axi_periph ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+ ] $jtag_axi_0_axi_periph
+
   # Create instance: myrtl_0, and set properties
   set block_name myrtl
   set block_cell_name myrtl_0
@@ -270,16 +272,21 @@ proc create_root_design { parentCell } {
   # Create instance: rst_clk_wiz_100M, and set properties
   set rst_clk_wiz_100M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_clk_wiz_100M ]
 
+  # Create interface connections
+  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins jtag_axi_0/M_AXI] [get_bd_intf_pins jtag_axi_0_axi_periph/S00_AXI]
+  connect_bd_intf_net -intf_net jtag_axi_0_axi_periph_M00_AXI [get_bd_intf_pins hlsled_0/s_axi_control] [get_bd_intf_pins jtag_axi_0_axi_periph/M00_AXI]
+
   # Create port connections
-  connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins myrtl2_0/clk] [get_bd_pins myrtl_0/clk] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins hlsled_0/ap_clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins jtag_axi_0_axi_periph/ACLK] [get_bd_pins jtag_axi_0_axi_periph/M00_ACLK] [get_bd_pins jtag_axi_0_axi_periph/S00_ACLK] [get_bd_pins myrtl_0/clk] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_locked [get_bd_pins clk_wiz/locked] [get_bd_pins rst_clk_wiz_100M/dcm_locked]
-  connect_bd_net -net myrtl2_0_led [get_bd_ports led1] [get_bd_pins myrtl2_0/led]
+  connect_bd_net -net hlsled_0_o [get_bd_ports led1] [get_bd_pins hlsled_0/o]
   connect_bd_net -net myrtl_0_led [get_bd_ports led0] [get_bd_pins myrtl_0/led]
   connect_bd_net -net reset_rtl_1 [get_bd_ports reset] [get_bd_pins clk_wiz/reset] [get_bd_pins rst_clk_wiz_100M/ext_reset_in]
-  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins myrtl2_0/resetn] [get_bd_pins myrtl_0/resetn] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
+  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins hlsled_0/ap_rst_n] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins jtag_axi_0_axi_periph/ARESETN] [get_bd_pins jtag_axi_0_axi_periph/M00_ARESETN] [get_bd_pins jtag_axi_0_axi_periph/S00_ARESETN] [get_bd_pins myrtl_0/resetn] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
   connect_bd_net -net sys_clock_1 [get_bd_ports sys_clock] [get_bd_pins clk_wiz/clk_in1]
 
   # Create address segments
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs hlsled_0/s_axi_control/Reg] -force
 
 
   # Restore current instance

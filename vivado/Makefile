@@ -17,7 +17,7 @@ $(BIT_STREAM): $(PROJECT_DIR)
 create_project: $(PROJECT_DIR)
 
 clean:
-	@rm -rf $(PROJECT_DIR) .Xil vivado_* *.log *.jou
+	@rm -rf $(PROJECT_DIR) .Xil vivado_* *.log *.jou bin
 
 bin:
 	mkdir bin

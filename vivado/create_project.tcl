@@ -4,11 +4,13 @@ set project_directory [lindex $argv 1]
 set board_name           "digilentinc.com:cora-z7-07s:part0:1.0"
 set rtl_directory        "../src/rtl"
 set constraint_directory "../src/constraint"
+set ip_dir               "../build/src/hls"
 set design_tcl_file      "design_1.tcl"
 
 # Create/Init Project
 create_project $project_name $project_directory
 set_property board $board_name [current_project]
+set_property IP_REPO_PATHS $ip_dir [current_fileset]
 update_ip_catalog
 
 # Add sources
