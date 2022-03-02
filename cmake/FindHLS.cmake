@@ -32,6 +32,10 @@ if(HLS_FOUND AND NOT TARGET HLS::HLS)
   )
 endif()
 
+# HLS_VERSION: Vitis HLS Version
+get_filename_component(HLS_VERSION "${HLS_BIN_DIR}" DIRECTORY)
+get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
+
 # デフォルトの CFLAGS
 set(HLS_CFLAGS -Wall)
 
@@ -184,8 +188,6 @@ function(add_hls_project project)
 
   set(HLS_ADD_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${project})
   set(HLS_ADD_PROJECT_PROJECT ${HLS_ADD_PROJECT_DIR}/${project}.app)
-
-# message(${HLS_ADD_PROJECT_SOURCES})
 
   add_library(lib_${project} STATIC ${HLS_ADD_PROJECT_SOURCES})
   target_link_libraries(lib_${project}
