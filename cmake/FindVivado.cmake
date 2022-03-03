@@ -1,4 +1,12 @@
-# find vivado
+# find vivado from
+#  You can change the search location by
+#  setting the following variables.
+#
+#  VIVADO_ROOT
+#  XILINX_VIVADO Environment variable
+#
+# exp) cmake -DVIVADO_ROOT=/c/Xilinx/Vivado/2021.1
+#
 find_path(VIVADO_BIN_DIR
   vivado
   PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO

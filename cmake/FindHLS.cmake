@@ -1,4 +1,12 @@
 # Find Vitis HLS
+#  You can change the search location by
+#  setting the following variables.
+#
+#  VITIS_HLS_ROOT
+#  XILINX_HLS Environment variable
+#
+# exp) cmake -DVITIS_HLS_ROOT=/c/Xilinx/Vitis_HLS/2021.1
+#
 find_path(HLS_BIN_DIR
   vitis_hls
   PATHS ${VITIS_HLS_ROOT} ENV XILINX_HLS
