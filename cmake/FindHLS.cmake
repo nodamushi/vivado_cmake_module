@@ -1,14 +1,30 @@
 # Find Vitis HLS
 #  You can change the search location by
 #  setting the following variables.
-#
+# vitis hls
 #  VITIS_HLS_ROOT
 #  XILINX_HLS Environment variable
 #
-# exp) cmake -DVITIS_HLS_ROOT=/c/Xilinx/Vitis_HLS/2021.1
+# vivado hls
+#  VIVADO_ROOT
+#  XILINX_VIVADO Environment variable
 #
+# exp) cmake -DVITIS_HLS_ROOT=/c/Xilinx/${HLS_EXEC}/2021.1
+#
+
+# Default Values
+set(HLS_VENDOR_NAME       Anonymous)
+set(HLS_TAXONOMY          Virus)
+set(HLS_SOLUTION_NAME     solution1)
+set(HLS_TRACE_LEVEL       port_hier)
+set(VITIS_HLS_FLOW_TARGET vivado)
+set(HLS_DEFAULT_VERSION   "0.0")
+
+# find vitis_hls
+set(HLS_EXEC vitis_hls)
+set(HLS_IS_VITIS TRUE)
 find_path(HLS_BIN_DIR
-  vitis_hls
+  ${HLS_EXEC}
   PATHS ${VITIS_HLS_ROOT} ENV XILINX_HLS
   PATH_SUFFIXES bin
 )
@@ -18,6 +34,23 @@ find_path(HLS_INCLUDE_DIR
   PATHS ${VITIS_HLS_ROOT} ENV XILINX_HLS
   PATH_SUFFIXES include
 )
+
+# find vivado_hls when vitis is not found
+if (${HLS_BIN_DIR} STREQUAL "HLS_BIN_DIR-NOTFOUND")
+  set(HLS_EXEC vivado_hls)
+  set(HLS_IS_VITIS FALSE)
+  find_path(HLS_BIN_DIR
+    ${HLS_EXEC}
+    PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
+    PATH_SUFFIXES bin
+  )
+
+  find_path(HLS_INCLUDE_DIR
+    NAMES hls_stream.h
+    PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
+    PATH_SUFFIXES include
+  )
+endif()
 
 # save current directory
 set(HLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -135,7 +168,7 @@ function(add_hls_project project)
 
   # set default option value
   if(NOT HLS_ADD_PROJECT_VERSION)
-    set(HLS_ADD_PROJECT_VERSION "0.0")
+    set(HLS_ADD_PROJECT_VERSION ${HLS_DEFAULT_VERSION})
   endif()
   #  * Version string separated by underscores
   string(REPLACE "." "_" HLS_ADD_PROJECT_VERSION_ ${HLS_ADD_PROJECT_VERSION})
@@ -149,7 +182,7 @@ function(add_hls_project project)
   endif()
 
   if(NOT HLS_ADD_PROJECT_VENDOR)
-  set(HLS_ADD_PROJECT_VENDOR "Anonymous")
+  set(HLS_ADD_PROJECT_VENDOR "${HLS_VENDOR_NAME}")
   endif()
 
   if(NOT HLS_ADD_PROJECT_IPNAME)
@@ -157,19 +190,19 @@ function(add_hls_project project)
   endif()
 
   if(NOT HLS_ADD_PROJECT_TAXONOMY)
-    set(HLS_ADD_PROJECT_TAXONOMY "Virus")
+    set(HLS_ADD_PROJECT_TAXONOMY "${HLS_TAXONOMY}")
   endif()
 
   if(NOT HLS_ADD_PROJECT_SOLUTION)
-    set(HLS_ADD_PROJECT_SOLUTION "solution1")
+    set(HLS_ADD_PROJECT_SOLUTION "${HLS_SOLUTION_NAME}")
   endif()
 
   if(NOT HLS_ADD_PROJECT_FLOW_TARGET)
-    set(HLS_ADD_PROJECT_FLOW_TARGET "vivado")
+    set(HLS_ADD_PROJECT_FLOW_TARGET ${VITIS_HLS_FLOW_TARGET})
   endif()
 
   if(NOT HLS_ADD_PROJECT_COSIM_TRACE_LEVEL)
-    set(HLS_ADD_PROJECT_COSIM_TRACE_LEVEL port_hier)
+    set(HLS_ADD_PROJECT_COSIM_TRACE_LEVEL ${HLS_TRACE_LEVEL})
   endif()
 
   # fix relative path
@@ -264,18 +297,19 @@ function(add_hls_project project)
     DEPENDS ${HLS_ADD_PROJECT_DEPENDS}
     COMMAND
       # Define Environment Variables
-      VITIS_HLS_PROJECT_NAME=${project}
-      VITIS_HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      VITIS_HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
-      VITIS_HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
-      VITIS_HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
-      VITIS_HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
-      VITIS_HLS_TOP="${HLS_ADD_PROJECT_TOP}"
-      VITIS_HLS_PART="${HLS_ADD_PROJECT_PART}"
-      VITIS_HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
-      VITIS_HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
-      # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/create_vitis_HLS_project.tcl
+      HLS_PROJECT_NAME=${project}
+      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      HLS_PART="${HLS_ADD_PROJECT_PART}"
+      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      # Call ${HLS_EXEC}
+      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/create_hls_project.tcl
   )
 
   # synthesis target
@@ -285,16 +319,17 @@ function(add_hls_project project)
     DEPENDS create_project_${project}
     COMMAND
       # Define Environment Variables
-      VITIS_HLS_PROJECT_NAME=${project}
-      VITIS_HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      VITIS_HLS_NAME="${HLS_ADD_PROJECT_NAME}"
-      VITIS_HLS_DESCRIPTION="${HLS_ADD_PROJECT_DESCRIPTION}"
-      VITIS_HLS_IPNAME="${HLS_ADD_PROJECT_IPNAME}"
-      VITIS_HLS_IP_TAXONOMY="${HLS_ADD_PROJECT_TAXONOMY}"
-      VITIS_HLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
-      VITIS_HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
-      # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/csynth.tcl
+      HLS_PROJECT_NAME=${project}
+      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      HLS_NAME="${HLS_ADD_PROJECT_NAME}"
+      HLS_DESCRIPTION="${HLS_ADD_PROJECT_DESCRIPTION}"
+      HLS_IPNAME="${HLS_ADD_PROJECT_IPNAME}"
+      HLS_IP_TAXONOMY="${HLS_ADD_PROJECT_TAXONOMY}"
+      HLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
+      HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
+      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      # Call ${HLS_EXEC}
+      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
   )
 
   # C/RTL simulation target
@@ -302,12 +337,13 @@ function(add_hls_project project)
     DEPENDS csynth_${project}
     COMMAND
       # Define Environment Variables
-      VITIS_HLS_PROJECT_NAME=${project}
-      VITIS_HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      VITIS_HLS_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
-      VITIS_HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
-      # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/cosim.tcl
+      HLS_PROJECT_NAME=${project}
+      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      HLS_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
+      HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
+      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      # Call ${HLS_EXEC}
+      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
   )
 
   # delete project target
