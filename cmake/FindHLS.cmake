@@ -21,24 +21,23 @@ set(VITIS_HLS_FLOW_TARGET vivado)
 set(HLS_DEFAULT_VERSION   "0.0")
 
 # find vitis_hls
-set(HLS_EXEC vitis_hls)
-set(HLS_IS_VITIS TRUE)
-find_path(HLS_BIN_DIR
-  ${HLS_EXEC}
+find_path(VITIS_HLS_BIN_DIR
+  vitis_hls
   PATHS ${VITIS_HLS_ROOT} ENV XILINX_HLS
   PATH_SUFFIXES bin
 )
 
-find_path(HLS_INCLUDE_DIR
+find_path(VITIS_HLS_INCLUDE_DIR
   NAMES hls_stream.h
   PATHS ${VITIS_HLS_ROOT} ENV XILINX_HLS
   PATH_SUFFIXES include
 )
 
 # find vivado_hls when vitis is not found
-if (${HLS_BIN_DIR} STREQUAL "HLS_BIN_DIR-NOTFOUND")
+if (${VITIS_HLS_BIN_DIR} STREQUAL "VITIS_HLS_BIN_DIR-NOTFOUND")
   set(HLS_EXEC vivado_hls)
   set(HLS_IS_VITIS FALSE)
+  set(HLS_IS_VIVADO TRUE)
   find_path(HLS_BIN_DIR
     ${HLS_EXEC}
     PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
@@ -50,6 +49,12 @@ if (${HLS_BIN_DIR} STREQUAL "HLS_BIN_DIR-NOTFOUND")
     PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
     PATH_SUFFIXES include
   )
+else()
+  set(HLS_EXEC vitis_hls)
+  set(HLS_IS_VITIS TRUE)
+  set(HLS_IS_VIVADO FALSE)
+  set(HLS_BIN_DIR ${VITIS_HLS_BIN_DIR})
+  set(HLS_INCLUDE_DIR ${VITIS_HLS_INCLUDE_DIR})
 endif()
 
 # save current directory
