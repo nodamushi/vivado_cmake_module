@@ -242,7 +242,7 @@ function(add_hls_project project)
       VITIS_HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
       VITIS_HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
       # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/create_vitis_HLS_project.tcl -f
+      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/create_vitis_HLS_project.tcl
   )
 
   set(HLS_ADD_PROJECT_CSYNTH_ZIP ${HLS_ADD_PROJECT_DIR}/${project}/${HLS_ADD_PROJECT_SOLUTION}/impl/ip/${HLS_ADD_PROJECT_VENDER}_hls_${HLS_ADD_PROJECT_TOP}_${HLS_ADD_PROJECT_VERSION_}.zip)
@@ -261,7 +261,7 @@ function(add_hls_project project)
       VITIS_HLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
       VITIS_HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
       # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/csynth.tcl -f
+      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/csynth.tcl
   )
 
   add_custom_target(cosim_${project}
@@ -273,7 +273,7 @@ function(add_hls_project project)
       VITIS_HLS_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
       VITIS_HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
       # Call vitis_hls
-      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/cosim.tcl -f
+      ${HLS_BIN_DIR}/vitis_hls ${HLS_TCL_DIR}/cosim.tcl
   )
 
   add_custom_target(clear_${project}
