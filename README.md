@@ -2,6 +2,10 @@
 
 Simple sample project for Cora Z7 07S.
 
+## License
+
+- Unlicense
+
 ## Build
 
 ```sh
