@@ -19,6 +19,8 @@ set(HLS_SOLUTION_NAME     solution1)
 set(HLS_TRACE_LEVEL       port_hier)
 set(VITIS_HLS_FLOW_TARGET vivado)
 set(HLS_DEFAULT_VERSION   "0.0")
+# generated *.app file name by create_project command
+set(HLS_PROJECT_FILE_NAME hls.app)
 
 # find vitis_hls
 find_path(VITIS_HLS_BIN_DIR
@@ -57,8 +59,6 @@ else()
   set(HLS_INCLUDE_DIR ${VITIS_HLS_INCLUDE_DIR})
 endif()
 
-# generated *.app file name by create_project command
-set(HLS_PROJECT_FILE_NAME hls.app)
 
 # save current directory
 set(HLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -71,19 +71,22 @@ mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR HLS
 # find package
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HLS
-  REQUIRED_VARS
-    HLS_BIN_DIR
-    HLS_INCLUDE_DIR
-    HLS_TCL_DIR
+REQUIRED_VARS
+HLS_BIN_DIR
+HLS_INCLUDE_DIR
+HLS_TCL_DIR
 )
+
+# reset HLS_EXEC
+set(HLS_EXEC ${HLS_BIN_DIR}/${HLS_EXEC})
 
 # provide HLS::HLS
 if(HLS_FOUND AND NOT TARGET HLS::HLS)
-  add_library(HLS::HLS INTERFACE IMPORTED)
-  set_target_properties(HLS::HLS
-    PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES ${HLS_INCLUDE_DIR}
-  )
+add_library(HLS::HLS INTERFACE IMPORTED)
+set_target_properties(HLS::HLS
+PROPERTIES
+INTERFACE_INCLUDE_DIRECTORIES ${HLS_INCLUDE_DIR}
+)
 endif()
 
 # HLS_VERSION: Vitis HLS Version
@@ -113,6 +116,7 @@ set(HLS_CFLAGS -Wall)
 #  [SOLUTION <solution name>]
 #  [COSIM_LDFLAGS <flag string>]
 #  [COSIM_TRACE_LEVEL <none|all|port|port_hier>]
+#  [FLOW_TARGET <vivado|vitis>]
 # )
 #
 # Define Targets:
@@ -147,6 +151,7 @@ set(HLS_CFLAGS -Wall)
 #  TB_LINK     : Link library for testing
 #  COSIM_LDFLAGS : cosim_design -ldflags
 #  COSIM_TRACE_LEVEL: none, all, port, port_hier
+#  FLOW_TARGET   : (vitis_hls only). vivado, vitis
 #
 function(add_hls_project project)
   cmake_parse_arguments(
@@ -319,7 +324,7 @@ function(add_hls_project project)
       HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
       HLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
-      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/create_hls_project.tcl
+      ${HLS_EXEC} ${HLS_TCL_DIR}/create_hls_project.tcl
   )
 
   # synthesis target
@@ -340,7 +345,7 @@ function(add_hls_project project)
       HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
       HLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
-      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
+      ${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
   )
 
   # C/RTL simulation target
@@ -354,12 +359,18 @@ function(add_hls_project project)
       HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
       HLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
-      ${HLS_BIN_DIR}/${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
+      ${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
   )
 
   # delete project target
   add_custom_target(clear_${project}
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${HLS_ADD_PROJECT_DIR}
+  )
+
+  # open project
+  add_custom_target(open_${project}
+    DEPENDS create_project_${project}
+    COMMAND ${HLS_EXEC} -p ${HLS_ADD_PROJECT_DIR}&
   )
 
 endfunction()

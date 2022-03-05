@@ -32,12 +32,14 @@ make JTAG=<Target Number> program_vivado_study
 
 - `xsdb`: run xsdb
 - `vivado_study` : Create [vivado_study](./vivado) Vivado project
+- `open_vivado_study` : Open vivado_study project
 - `clear_vivado_study` : Delete [vivado_study](./vivado) Vivado project
 - `impl_vivado_study` : Generate a bitstream
 - `program_vivado_study` : Write a bitstream to FPGA (use xsdb)
 - `export_bd_vivado_study`: Export design file ([vivado/design_1.tcl](./vivado/design_1.tcl))
 - `report_addr_vivado_study`: Report address
 - `create_project_hlsled` : Create [hlsled](./src/hls/hlsled) Vitis HLS project
+- `open_hlsled` : Open hlsled project
 - `clear_hlsled` : Delete [hlsled](./src/hls/hlsled) Vitis HLS project
 - `test_hlsled` : Compile C++ Test of [hlsled](./src/hls/hlsled) (* You can run this test using `ctest`)
 - `csynth_hlsled` : Perform high-level synthesis of [hlsled](./src/hls/hlsled)
