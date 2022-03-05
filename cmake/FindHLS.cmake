@@ -57,13 +57,16 @@ else()
   set(HLS_INCLUDE_DIR ${VITIS_HLS_INCLUDE_DIR})
 endif()
 
+# generated *.app file name by create_project command
+set(HLS_PROJECT_FILE_NAME hls.app)
+
 # save current directory
 set(HLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(HLS_TCL_DIR ${CMAKE_CURRENT_LIST_DIR}/tcl)
 set(HLS_CMAKE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
 # hide variables
-mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR)
+mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR HLS_PROJECT_FILE_NAME)
 
 # find package
 include(FindPackageHandleStandardArgs)
@@ -268,6 +271,7 @@ function(add_hls_project project)
     PUBLIC
       ${HLS_ADD_PROJECT_INCDIRS}
   )
+  set(HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS lib_${project})
 
   # define test-bench compile target
   if(HLS_ADD_PROJECT_TB_SOURCES)
@@ -283,6 +287,7 @@ function(add_hls_project project)
       PUBLIC
         ${HLS_ADD_PROJECT_TB_INCDIRS}
     )
+    set(HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS test_${project})
   endif()
 
   # replace ";" -> " " for tcl scripts
@@ -294,12 +299,12 @@ function(add_hls_project project)
 
   # define vitis hls project target
   set(HLS_ADD_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${project})
-  set(HLS_ADD_PROJECT_PROJECT ${HLS_ADD_PROJECT_DIR}/${project}.app)
+  set(HLS_ADD_PROJECT_PROJECT ${HLS_ADD_PROJECT_DIR}/${HLS_PROJECT_FILE_NAME})
 
   add_custom_target(create_project_${project} SOURCES ${HLS_ADD_PROJECT_PROJECT})
   add_custom_command(
     OUTPUT ${HLS_ADD_PROJECT_PROJECT}
-    DEPENDS ${HLS_ADD_PROJECT_DEPENDS}
+    DEPENDS ${HLS_ADD_PROJECT_DEPENDS} ${HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS}
     COMMAND
       # Define Environment Variables
       HLS_PROJECT_NAME=${project}
@@ -318,9 +323,10 @@ function(add_hls_project project)
   )
 
   # synthesis target
-  set(HLS_ADD_PROJECT_CSYNTH_ZIP ${HLS_ADD_PROJECT_DIR}/${project}/${HLS_ADD_PROJECT_SOLUTION}/impl/ip/${HLS_ADD_PROJECT_VENDER}_hls_${HLS_ADD_PROJECT_TOP}_${HLS_ADD_PROJECT_VERSION_}.zip)
+  set(HLS_ADD_PROJECT_CSYNTH_ZIP ${HLS_ADD_PROJECT_DIR}/${HLS_ADD_PROJECT_SOLUTION}/impl/ip/${HLS_ADD_PROJECT_VENDOR}_hls_${project}_${HLS_ADD_PROJECT_VERSION_}.zip)
   add_custom_target(csynth_${project} SOURCES ${HLS_ADD_PROJECT_CSYNTH_ZIP})
-  add_custom_command(OUTPUT ${HLS_ADD_PROJECT_CSYNTH_ZIP}
+  add_custom_command(
+    OUTPUT ${HLS_ADD_PROJECT_CSYNTH_ZIP}
     DEPENDS create_project_${project}
     COMMAND
       # Define Environment Variables

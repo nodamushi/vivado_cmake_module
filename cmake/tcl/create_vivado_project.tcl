@@ -1,3 +1,8 @@
+#
+# TCL script: ${project}
+#
+#  target: vivado
+#
 set project_name      [lindex $argv 0]
 set project_directory [lindex $argv 1]
 set board_name        [lindex $argv 2]

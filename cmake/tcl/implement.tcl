@@ -1,3 +1,8 @@
+#
+# TCL script: _impl_${project}_original
+#
+#  target: vivado
+#
 set project_name      [lindex $argv 0]
 set project_directory [lindex $argv 1]
 
@@ -7,6 +12,12 @@ set project_status [get_property STATUS [get_runs impl_1]]
 if {$project_status != "write_bitstream Complete!"} {
     launch_runs impl_1 -jobs 8 -to_step write_bitstream
     wait_on_run impl_1
+    set project_status [get_property STATUS [get_runs impl_1]]
+    if {$project_status != "write_bitstream Complete!"} {
+      puts "------------- Fail implements: $project_status --------------"
+      exit 1
+    }
+    puts "Result: $project_status"
 }
 
 close_project

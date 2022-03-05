@@ -1,3 +1,8 @@
+#
+# TCL Script: cosim_${project}
+#
+#  target: vitis_hls/vivado_hls
+#
 open_project $env(HLS_PROJECT_NAME)
 open_solution $env(HLS_SOLUTION_NAME)
 

@@ -15,6 +15,14 @@ cmake ..
 make impl_vivado_study
 ```
 
+## Program FPGA
+
+You can write a bitstream by the following command.
+
+```sh
+make JTAG=<Target Number> program_vivado_study
+```
+
 ### CMake Option
 
 - `-DVIVADO_ROOT=<Vivado Directory>` : Vivado install directory(exp: C:/Xilinx/Vivado/2021.1)
@@ -25,7 +33,10 @@ make impl_vivado_study
 - `xsdb`: run xsdb
 - `vivado_study` : Create [vivado_study](./vivado) Vivado project
 - `clear_vivado_study` : Delete [vivado_study](./vivado) Vivado project
-- `impl_vivado_study` : Generate bitstream
+- `impl_vivado_study` : Generate a bitstream
+- `program_vivado_study` : Write a bitstream to FPGA (use xsdb)
+- `export_bd_vivado_study`: Export design file ([vivado/design_1.tcl](./vivado/design_1.tcl))
+- `report_addr_vivado_study`: Report address
 - `create_project_hlsled` : Create [hlsled](./src/hls/hlsled) Vitis HLS project
 - `clear_hlsled` : Delete [hlsled](./src/hls/hlsled) Vitis HLS project
 - `test_hlsled` : Compile C++ Test of [hlsled](./src/hls/hlsled) (* You can run this test using `ctest`)
@@ -43,4 +54,3 @@ make impl_vivado_study
 
 - `build/vivado/vivado_study.prj` : Vivado project
 - `build/src/hls/hlsled/hlsled` : Vitis HLS project
-

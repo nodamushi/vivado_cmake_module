@@ -1,3 +1,8 @@
+#
+# TCL script: create_project_${project}
+#
+#  target: vitis_hls/vivado_hls
+#
 open_project $env(HLS_PROJECT_NAME)
 
 foreach src $env(HLS_SOURCES) {

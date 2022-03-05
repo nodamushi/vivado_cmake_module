@@ -32,17 +32,18 @@ find_package_handle_standard_args(Vivado
 get_filename_component(VIVADO_VERSION "${VIVADO_BIN_DIR}" DIRECTORY)
 get_filename_component(VIVADO_VERSION "${VIVADO_VERSION}" NAME)
 
+set(VIVADO_EXE ${VIVADO_BIN_DIR}/vivado)
+
 # xsdb target
 if(WIN32)
-  add_custom_target(xsdb
-    COMMAND ${VIVADO_BIN_DIR}/xsdb.bat
-  )
+  set(VIVADO_XSDB_EXE ${VIVADO_BIN_DIR}/xsdb.bat)
 else()
-  add_custom_target(xsdb
-    COMMAND ${VIVADO_BIN_DIR}/xsdb
-  )
+  set(VIVADO_XSDB_EXE ${VIVADO_BIN_DIR}/xsdb)
 endif()
 
+add_custom_target(xsdb
+  COMMAND ${VIVADO_XSDB_EXE}
+)
 # add_vivado_project(
 #    <project>
 #    BOARD <board name>
@@ -57,9 +58,20 @@ endif()
 #
 # Define Targets:
 #  ${project}                : Create Vivado project
+#  open_${project}           : Open project in vivado
 #  clear_${project}          : Delete Vivado project directory
-#  impl_${project}           : Create bit stream
+#  impl_${project}           : Create bit stream (build/bit/${project}.bit, build/bit/${project}.ltx)
 #   _impl_${project}_original: Run vivado to genenarate bitstream
+#  program_${project}        : Write bitstream
+#                            :   Environment:
+#                            :      JTAG    : jtag target
+#                            :      XSDB_URL: (option) connect url
+#                            :   exp) make JTAG=1 program_${project}
+#  export_bd_${project}      : Save IP Integrator design tcl file
+#  report_addr_${project}    : Report address
+#                            :   Environment:
+#                            :      REPORT_CSV: output csv file name
+#                            :  exp) make REPORT_CSV=foobar.csv report_addr_${project}
 #
 # Argument:
 #  project: target name
@@ -151,8 +163,8 @@ function(add_vivado_project project)
       VIVADO_RTL_LIST="${VIVADO_ADD_PROJECT_RTL_0}"
       VIVADO_CONSTRAINT_LIST="${VIVADO_ADD_PROJECT_CONSTRAINT_0}"
       VIVADO_IP_DIRECTORIES="${VIVADO_ADD_PROJECT_IP_0}"
-      # Call vitis_hls
-      ${VIVADO_BIN_DIR}/vivado
+      # Call vivado
+      ${VIVADO_EXE}
         -mode batch
         -source ${VIVADO_TCL_DIR}/create_vivado_project.tcl
         -tclargs
@@ -162,24 +174,32 @@ function(add_vivado_project project)
           ${VIVADO_ADD_PROJECT_DIR_0}
   )
 
+  # open project in vivado
+  add_custom_target(open_${project}
+    DEPENDS ${VIVADO_ADD_PROJECT_PROJECT}
+    COMMAND ${VIVADO_EXE} ${VIVADO_ADD_PROJECT_PROJECT} &
+  )
+
   # synthesis,impl,gen bitstream target
   set(VIVADO_ADD_PROJECT_BIT ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.bit)
+  set(VIVADO_ADD_PROJECT_LTX ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.ltx)
   set(VIVADO_ADD_PROJECT_BIT_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.bit)
+  set(VIVADO_ADD_PROJECT_LTX_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.ltx)
   #    Run  vivado   : _impl_${project}_original target
   #    Copy bitstream: impl_${project} target
   add_custom_target(_impl_${project}_original SOURCES ${VIVADO_ADD_PROJECT_BIT})
   add_custom_target(impl_${project}
     DEPENDS _impl_${project}_original
-    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_BIT} ${VIVADO_ADD_PROJECT_BIT_COPY}
-    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.* ${VIVADO_CMAKE_BINARY_DIR}/bit/
     COMMAND echo "Output BitStream: ${VIVADO_ADD_PROJECT_BIT} ${VIVADO_ADD_PROJECT_BIT_COPY}"
+    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_BIT} ${VIVADO_ADD_PROJECT_BIT_COPY}
+    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_LTX} ${VIVADO_ADD_PROJECT_LTX_COPY}
   )
   add_custom_command(
     OUTPUT ${VIVADO_ADD_PROJECT_BIT}
-    DEPENDS ${project}
+    DEPENDS ${project} ${VIVADO_ADD_PROJECT_DESIGN}
     COMMAND
-      # Call vitis_hls
-      ${VIVADO_BIN_DIR}/vivado
+      # Call vivado
+      ${VIVADO_EXE}
         -mode batch
         -source ${VIVADO_TCL_DIR}/implement.tcl
         -tclargs
@@ -193,5 +213,48 @@ function(add_vivado_project project)
     COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/vivado*
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/.Xil
   )
+
+  # write bitstream
+  add_custom_target(program_${project}
+    DEPENDS _impl_${project}_original
+    COMMAND ${VIVADO_XSDB_EXE} ${VIVADO_TCL_DIR}/xsdb_program.tcl ${VIVADO_ADD_PROJECT_BIT} program_${project}
+  )
+
+
+  if(VIVADO_ADD_PROJECT_DESIGN)
+    # write bd tcl file
+    add_custom_target(
+      export_bd_${project}
+      COMMAND
+      # Call vivado
+      ${VIVADO_EXE}
+        -mode batch
+        -source ${VIVADO_TCL_DIR}/export_bd.tcl
+        -tclargs
+          ${project}
+          ${VIVADO_ADD_PROJECT_DIR}
+          ${VIVADO_TCL_DIR}
+          ${VIVADO_ADD_PROJECT_DESIGN}
+          ""
+    )
+
+    # report address
+    add_custom_target(
+      report_addr_${project}
+      COMMAND
+      # Call vivado
+      ${VIVADO_EXE}
+        -mode batch
+        -source ${VIVADO_TCL_DIR}/report_addr.tcl
+        -tclargs
+          ${project}
+          ${VIVADO_ADD_PROJECT_DIR}
+          ${VIVADO_TCL_DIR}
+          report_addr_${project}
+          ${VIVADO_CMAKE_BINARY_DIR}
+          ""
+    )
+  endif()
+
 
 endfunction()
