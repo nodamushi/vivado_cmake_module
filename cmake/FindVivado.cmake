@@ -172,6 +172,7 @@ function(add_vivado_project project)
           ${VIVADO_ADD_PROJECT_DIR}
           ${VIVADO_ADD_PROJECT_BOARD}
           ${VIVADO_ADD_PROJECT_DIR_0}
+          ${VIVADO_ADD_PROJECT_TOP}
   )
 
   # open project in vivado

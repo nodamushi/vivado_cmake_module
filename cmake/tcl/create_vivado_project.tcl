@@ -7,6 +7,7 @@ set project_name      [lindex $argv 0]
 set project_directory [lindex $argv 1]
 set board_name        [lindex $argv 2]
 set full_path         [lindex $argv 3]
+set top_module_name   [lindex $argv 4]
 
 create_project -force $project_name $project_directory
 set_property board $board_name [current_project]
@@ -39,6 +40,10 @@ if { [info exists ::env(VIVADO_DESIGN_TCL)] } {
   } else {
     puts "Skip load design: $env(VIVADO_DESIGN_TCL)"
   }
+}
+
+if { "$top_module_name" != "" } {
+  set_property top ${top_module_name} [current_fileset]
 }
 
 close_project
