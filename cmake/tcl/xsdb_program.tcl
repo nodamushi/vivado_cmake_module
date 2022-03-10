@@ -6,6 +6,9 @@
 set bitstream [lindex $argv 0]
 set target_name [lindex $argv 1]
 
+if { "$target_name" == "" } {
+  set target_name "<name>"
+}
 
 if { [info exists ::env(XSDB_URL)] } {
   puts "Connect $env(XSDB_URL)"
@@ -22,7 +25,7 @@ if { [info exists ::env(JTAG)] } {
   puts "Done"
   exit 0
 } else {
-  puts "Undefine JTAG (jtag target)"
+  puts "Undefine JTAG (jtag target number)"
   puts " exp) make JTAG=1 $target_name"
   puts ""
   puts "----------Target List----------"

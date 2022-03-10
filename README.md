@@ -15,12 +15,33 @@ cmake ..
 make impl_vivado_study
 ```
 
+## Bitstreams
+
+Output Directory:
+
+- `build/vivado/vivado_study.prj/vivado_study.runs/impl_1`
+- `build/vivado/vivado_study.prj/vivado_study.runs/child_0_impl_1`
+
 ## Program FPGA
 
 You can write a bitstream by the following command.
 
+write `build/vivado/vivado_study.prj/vivado_study.runs/impl_1/top.bit`
+
 ```sh
 make JTAG=<Target Number> program_vivado_study
+```
+
+write `build/vivado/vivado_study.prj/vivado_study.runs/impl_1/myrtl_myrtl_partial.bit`
+
+```sh
+make JTAG=<Target Number> program_vivado_study_pr0
+```
+
+write `build/vivado/vivado_study.prj/vivado_study.runs/child_0_impl_1/myrtl_myled2_partial.bit`
+
+```sh
+make JTAG=<Target Number> program_vivado_study_pr1
 ```
 
 ### CMake Option

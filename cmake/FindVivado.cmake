@@ -57,6 +57,10 @@ else()
   set(VIVADO_XSDB_EXE ${VIVADO_BIN_DIR}/xsdb)
 endif()
 
+# write bitstream command
+#  ${VIVADO_XSDB_EXE} bitstream [make target name]
+set(VIVADO_WRITE_BITSTREAM ${VIVADO_XSDB_EXE} ${VIVADO_TCL_DIR}/xsdb_program.tcl)
+
 add_custom_target(xsdb
   COMMAND ${VIVADO_XSDB_EXE}
 )
@@ -79,8 +83,7 @@ add_custom_target(xsdb
 #  ${project}                : Create Vivado project
 #  open_${project}           : Open project in vivado
 #  clear_${project}          : Delete Vivado project directory
-#  impl_${project}           : Create bit stream (build/bit/${project}.bit, build/bit/${project}.ltx)
-#   _impl_${project}_original: Run vivado to genenarate bitstream
+#  impl_${project}           : Create bit stream (run impl)
 #  program_${project}        : Write bitstream
 #                            :   Environment:
 #                            :      JTAG    : jtag target
@@ -200,6 +203,11 @@ function(add_vivado_project project)
   set(VIVADO_ADD_PROJECT_DIR_0 ${CMAKE_CURRENT_BINARY_DIR}/${VIVADO_ADD_PROJECT_DIR})
   set(VIVADO_ADD_PROJECT_PROJECT ${VIVADO_ADD_PROJECT_DIR_0}/${project}.xpr)
   add_custom_target(${project} SOURCES ${VIVADO_ADD_PROJECT_PROJECT})
+  set_target_properties(${project}
+    PROPERTIES
+      PROJECT_DIR  ${VIVADO_ADD_PROJECT_DIR_0}
+      RUNS_DIR  ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs
+      PROJECT_FILE ${VIVADO_ADD_PROJECT_PROJECT})
   add_custom_command(
     OUTPUT ${VIVADO_ADD_PROJECT_PROJECT}
     DEPENDS
@@ -240,15 +248,9 @@ function(add_vivado_project project)
   set(VIVADO_ADD_PROJECT_LTX ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.ltx)
   set(VIVADO_ADD_PROJECT_BIT_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.bit)
   set(VIVADO_ADD_PROJECT_LTX_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.ltx)
-  #    Run  vivado   : _impl_${project}_original target
-  #    Copy bitstream: impl_${project} target
-  add_custom_target(_impl_${project}_original SOURCES ${VIVADO_ADD_PROJECT_BIT})
-  add_custom_target(impl_${project}
-    DEPENDS _impl_${project}_original
-    COMMAND echo "Output BitStream: ${VIVADO_ADD_PROJECT_BIT} ${VIVADO_ADD_PROJECT_BIT_COPY}"
-    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_BIT} ${VIVADO_ADD_PROJECT_BIT_COPY}
-    COMMAND ${CMAKE_COMMAND} -E copy ${VIVADO_ADD_PROJECT_LTX} ${VIVADO_ADD_PROJECT_LTX_COPY}
-  )
+
+  #    run impl: impl_${project} target
+  add_custom_target(impl_${project} SOURCES ${VIVADO_ADD_PROJECT_BIT})
   add_custom_command(
     OUTPUT ${VIVADO_ADD_PROJECT_BIT}
     DEPENDS ${project} ${VIVADO_ADD_PROJECT_DESIGN}
@@ -275,8 +277,8 @@ function(add_vivado_project project)
 
   # write bitstream
   add_custom_target(program_${project}
-    DEPENDS _impl_${project}_original
-    COMMAND ${VIVADO_XSDB_EXE} ${VIVADO_TCL_DIR}/xsdb_program.tcl ${VIVADO_ADD_PROJECT_BIT} program_${project}
+    DEPENDS impl_${project}
+    COMMAND ${VIVADO_WRITE_BITSTREAM} ${VIVADO_ADD_PROJECT_BIT} program_${project}
   )
 
 
