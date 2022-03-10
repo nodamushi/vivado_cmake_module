@@ -8,16 +8,26 @@ set project_directory [lindex $argv 1]
 
 open_project ${project_directory}/${project_name}.xpr
 
-set project_status [get_property STATUS [get_runs impl_1]]
-if {$project_status != "write_bitstream Complete!"} {
-    launch_runs impl_1 -jobs 8 -to_step write_bitstream
-    wait_on_run impl_1
-    set project_status [get_property STATUS [get_runs impl_1]]
-    if {$project_status != "write_bitstream Complete!"} {
-      puts "------------- Fail implements: $project_status --------------"
-      exit 1
-    }
-    puts "Result: $project_status"
+set JOB_SIZE 1
+if { [info exists ::env(VIVADO_JOB_SIZE)] } {
+  set JOB_SIZE $env(VIVADO_JOB_SIZE)
+}
+
+foreach run [get_runs] {
+  set isImpl [get_property IS_IMPLEMENTATION  $run]
+  set isIncArchive [get_property INCLUDE_IN_ARCHIVE $run]
+  set stat [get_property STATUS $run]
+  if { $isImpl == 1 && $isIncArchive == 1 && $stat != "write_bitstream Complete!" } {
+      launch_runs $run -jobs $JOB_SIZE -to_step write_bitstream
+      wait_on_run $run
+      set stat [get_property STATUS $run]
+      set name [get_property NAME $run]
+      if {$stat != "write_bitstream Complete!"} {
+        puts "------------- Fail implements:$name: $stat --------------"
+        exit 1
+      }
+      puts "Result:$name: $stat"
+  }
 }
 
 close_project

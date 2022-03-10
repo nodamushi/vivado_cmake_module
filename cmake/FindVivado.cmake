@@ -7,6 +7,11 @@
 #
 # exp) cmake -DVIVADO_ROOT=/c/Xilinx/Vivado/2021.1
 #
+
+#default value
+set(VIVADO_DEFAULT_IMPL "impl_1")
+
+# find path
 find_path(VIVADO_BIN_DIR
   vivado
   PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
@@ -14,6 +19,10 @@ find_path(VIVADO_BIN_DIR
 )
 
 # save currrent directory
+if(NOT VIVADO_PROJECT_REPOGITORY_ROOT_DIR)
+  # `root` variable of create_vivado_project.tcl
+  set(VIVADO_PROJECT_REPOGITORY_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 set(VIVADO_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(VIVADO_TCL_DIR ${CMAKE_CURRENT_LIST_DIR}/tcl)
 set(VIVADO_CMAKE_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -31,6 +40,13 @@ find_package_handle_standard_args(Vivado
 # VIVADO_VERSION: Vivado Version
 get_filename_component(VIVADO_VERSION "${VIVADO_BIN_DIR}" DIRECTORY)
 get_filename_component(VIVADO_VERSION "${VIVADO_VERSION}" NAME)
+
+
+include(ProcessorCount)
+ProcessorCount(VIVADO_JOB_SIZE)
+if(VIVADO_JOB_SIZE EQUAL 0)
+  set(VIVADO_JOB_SIZE 1)
+endif()
 
 set(VIVADO_EXE ${VIVADO_BIN_DIR}/vivado)
 
@@ -54,6 +70,9 @@ add_custom_target(xsdb
 #    [IP <directory>...]
 #    [DESIGN <tcl file>]
 #    [DEPENDS <target>...]
+#    [TCL1   <tcl file>]
+#    [TCL2   <tcl file>]
+#    [DFE    <tcl file>]
 # )
 #
 # Define Targets:
@@ -87,13 +106,16 @@ add_custom_target(xsdb
 #  IP         : IP directories
 #  DESIGN     : Design tcl file
 #  DEPENDS    : depends
+#  TCL1       : Tcl script file. This file will be loaded after adding RTL/constraints files in `create_vivado_project.tcl`.
+#  DFE        : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
+#  TCL2       : Tcl script file. This file will be loaded before closeing project in `create_vivado_project.tcl`.
 #
 function(add_vivado_project project)
   cmake_parse_arguments(
     VIVADO_ADD_PROJECT
     ""
-    "BOARD;DESIGN;DIR;TOP"
-    "RTL;CONSTRAINT;IP;DEPENDS"
+    "BOARD;DESIGN;DIR;TOP;TCL1;TCL2;DFE"
+    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS"
     ${ARGN}
   )
 
@@ -109,6 +131,10 @@ function(add_vivado_project project)
   # set default option value
   if(NOT VIVADO_ADD_PROJECT_DIR)
     set(VIVADO_ADD_PROJECT_DIR "${project}.prj")
+  endif()
+
+  if(NOT VIVADO_ADD_PROJECT_IMPLEMENTS)
+    set(VIVADO_ADD_PROJECT_IMPLEMENTS ${VIVADO_DEFAULT_IMPL})
   endif()
 
   # fix relative path
@@ -145,10 +171,30 @@ function(add_vivado_project project)
     endif()
   endif()
 
+  if(VIVADO_ADD_PROJECT_TCL1)
+    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_TCL1})
+      set(VIVADO_ADD_PROJECT_TCL1 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_TCL1})
+    endif()
+  endif()
+
+  if(VIVADO_ADD_PROJECT_TCL2)
+    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_TCL2})
+      set(VIVADO_ADD_PROJECT_TCL2 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_TCL2})
+    endif()
+  endif()
+
+  if(VIVADO_ADD_PROJECT_DFE)
+    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_DFE})
+      set(VIVADO_ADD_PROJECT_DFE ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_DFE})
+    endif()
+  endif()
+
+
   # replace ";" -> " " for tcl scripts
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_RTL_0        "${VIVADO_ADD_PROJECT_RTL_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IP_0         "${VIVADO_ADD_PROJECT_IP_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_CONSTRAINT_0 "${VIVADO_ADD_PROJECT_CONSTRAINT_0}")
+  string(REPLACE ";" " " VIVADO_ADD_PROJECT_IMPLEMENTS "${VIVADO_ADD_PROJECT_IMPLEMENTS}")
 
   # define ${project} target(create Vivado project)
   set(VIVADO_ADD_PROJECT_DIR_0 ${CMAKE_CURRENT_BINARY_DIR}/${VIVADO_ADD_PROJECT_DIR})
@@ -156,13 +202,19 @@ function(add_vivado_project project)
   add_custom_target(${project} SOURCES ${VIVADO_ADD_PROJECT_PROJECT})
   add_custom_command(
     OUTPUT ${VIVADO_ADD_PROJECT_PROJECT}
-    DEPENDS ${VIVADO_ADD_PROJECT_DEPENDS}
+    DEPENDS
+      ${VIVADO_ADD_PROJECT_DEPENDS}
+      ${VIVADO_ADD_PROJECT_TCL1}
+      ${VIVADO_ADD_PROJECT_TCL2}
     COMMAND
       # Define global
       VIVADO_DESIGN_TCL=${VIVADO_ADD_PROJECT_DESIGN}
       VIVADO_RTL_LIST="${VIVADO_ADD_PROJECT_RTL_0}"
       VIVADO_CONSTRAINT_LIST="${VIVADO_ADD_PROJECT_CONSTRAINT_0}"
       VIVADO_IP_DIRECTORIES="${VIVADO_ADD_PROJECT_IP_0}"
+      VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL1}"
+      VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL2}"
+      VIVADO_DFE_TCL="${VIVADO_ADD_PROJECT_DFE}"
       # Call vivado
       ${VIVADO_EXE}
         -mode batch
@@ -173,6 +225,8 @@ function(add_vivado_project project)
           ${VIVADO_ADD_PROJECT_BOARD}
           ${VIVADO_ADD_PROJECT_DIR_0}
           ${VIVADO_ADD_PROJECT_TOP}
+          ${CMAKE_CURRENT_SOURCE_DIR}
+          ${VIVADO_PROJECT_REPOGITORY_ROOT_DIR}
   )
 
   # open project in vivado
@@ -199,6 +253,10 @@ function(add_vivado_project project)
     OUTPUT ${VIVADO_ADD_PROJECT_BIT}
     DEPENDS ${project} ${VIVADO_ADD_PROJECT_DESIGN}
     COMMAND
+      # Define global
+      VIVADO_DESIGN_TCL=${VIVADO_ADD_PROJECT_DESIGN}
+      VIVADO_JOB_SIZE=${VIVADO_JOB_SIZE}
+      VIVADO_IMPLEMENTS="${VIVADO_ADD_PROJECT_IMPLEMENTS}"
       # Call vivado
       ${VIVADO_EXE}
         -mode batch
