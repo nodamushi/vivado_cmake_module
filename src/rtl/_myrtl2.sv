@@ -15,15 +15,15 @@ module _myrtl2#(
     if (!resetn)
       counter <= 0;
     else
-      counter <= counter == T? 0 : counter + 1;
+      counter <= counter >= T? 0 : counter + 1;
   end
 
-  assign out_next_led = {out[1:0], out[2]};
+  assign out_next_led = ~out;
   always_ff @(posedge clk) begin
     if (!resetn)
-      out <= 3'b001;
+      out <= 0;
     else
-      out <= counter == T? out_next_led: out;
+      out <= counter >= T? out_next_led: out;
   end
 
 endmodule

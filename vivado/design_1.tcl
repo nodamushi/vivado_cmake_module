@@ -37,13 +37,6 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # To test this script, run the following commands from Vivado Tcl console:
 # source design_1_script.tcl
 
-
-# The design that will be created by this Tcl script contains the following 
-# module references:
-# myrtl
-
-# Please add the sources of those modules before sourcing this Tcl script.
-
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
@@ -131,9 +124,10 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
+xilinx.com:ip:jtag_axi:1.2\
 xilinx.com:ip:clk_wiz:6.0\
 nodamushi:hls:hlsled:1.0\
-xilinx.com:ip:jtag_axi:1.2\
+xilinx.com:ip:ila:6.2\
 xilinx.com:ip:proc_sys_reset:5.0\
 "
 
@@ -152,31 +146,6 @@ xilinx.com:ip:proc_sys_reset:5.0\
       set bCheckIPsPassed 0
    }
 
-}
-
-##################################################################
-# CHECK Modules
-##################################################################
-set bCheckModules 1
-if { $bCheckModules == 1 } {
-   set list_check_mods "\ 
-myrtl\
-"
-
-   set list_mods_missing ""
-   common::send_gid_msg -ssname BD::TCL -id 2020 -severity "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
-
-   foreach mod_vlnv $list_check_mods {
-      if { [can_resolve_reference $mod_vlnv] == 0 } {
-         lappend list_mods_missing $mod_vlnv
-      }
-   }
-
-   if { $list_mods_missing ne "" } {
-      catch {common::send_gid_msg -ssname BD::TCL -id 2021 -severity "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
-      common::send_gid_msg -ssname BD::TCL -id 2022 -severity "INFO" "Please add source files for the missing module(s) above."
-      set bCheckIPsPassed 0
-   }
 }
 
 if { $bCheckIPsPassed != 1 } {
@@ -225,7 +194,10 @@ proc create_root_design { parentCell } {
   # Create interface ports
 
   # Create ports
-  set led0 [ create_bd_port -dir O -from 2 -to 0 led0 ]
+  set aclk [ create_bd_port -dir O -type clk aclk ]
+  set aresetn [ create_bd_port -dir O -from 0 -to 0 -type rst aresetn ]
+  set hoge [ create_bd_port -dir I -from 2 -to 0 -type data hoge ]
+  set led0 [ create_bd_port -dir I -from 2 -to 0 -type data led0 ]
   set led1 [ create_bd_port -dir O -from 2 -to 0 led1 ]
   set reset [ create_bd_port -dir I -type rst reset ]
   set_property -dict [ list \
@@ -235,6 +207,9 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.PHASE {0.0} \
  ] $sys_clock
+
+  # Create instance: JTAG, and set properties
+  set JTAG [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 JTAG ]
 
   # Create instance: clk_wiz, and set properties
   set clk_wiz [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz ]
@@ -246,8 +221,16 @@ proc create_root_design { parentCell } {
   # Create instance: hlsled_0, and set properties
   set hlsled_0 [ create_bd_cell -type ip -vlnv nodamushi:hls:hlsled:1.0 hlsled_0 ]
 
-  # Create instance: jtag_axi_0, and set properties
-  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
+  # Create instance: ila_0, and set properties
+  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
+  set_property -dict [ list \
+   CONFIG.C_ENABLE_ILA_AXI_MON {false} \
+   CONFIG.C_MONITOR_TYPE {Native} \
+   CONFIG.C_NUM_OF_PROBES {2} \
+   CONFIG.C_PROBE0_TYPE {0} \
+   CONFIG.C_PROBE0_WIDTH {3} \
+   CONFIG.C_PROBE1_WIDTH {3} \
+ ] $ila_0
 
   # Create instance: jtag_axi_0_axi_periph, and set properties
   set jtag_axi_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 jtag_axi_0_axi_periph ]
@@ -255,44 +238,30 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_MI {1} \
  ] $jtag_axi_0_axi_periph
 
-  # Create instance: myrtl_0, and set properties
-  set block_name myrtl
-  set block_cell_name myrtl_0
-  if { [catch {set myrtl_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $myrtl_0 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-    set_property -dict [ list \
-   CONFIG.T {100000000} \
- ] $myrtl_0
-
   # Create instance: rst_clk_wiz_100M, and set properties
   set rst_clk_wiz_100M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_clk_wiz_100M ]
 
   # Create interface connections
-  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins jtag_axi_0/M_AXI] [get_bd_intf_pins jtag_axi_0_axi_periph/S00_AXI]
+  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins JTAG/M_AXI] [get_bd_intf_pins jtag_axi_0_axi_periph/S00_AXI]
   connect_bd_intf_net -intf_net jtag_axi_0_axi_periph_M00_AXI [get_bd_intf_pins hlsled_0/s_axi_control] [get_bd_intf_pins jtag_axi_0_axi_periph/M00_AXI]
 
   # Create port connections
-  connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins hlsled_0/ap_clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins jtag_axi_0_axi_periph/ACLK] [get_bd_pins jtag_axi_0_axi_periph/M00_ACLK] [get_bd_pins jtag_axi_0_axi_periph/S00_ACLK] [get_bd_pins myrtl_0/clk] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_clk_out1 [get_bd_ports aclk] [get_bd_pins JTAG/aclk] [get_bd_pins clk_wiz/clk_out1] [get_bd_pins hlsled_0/ap_clk] [get_bd_pins ila_0/clk] [get_bd_pins jtag_axi_0_axi_periph/ACLK] [get_bd_pins jtag_axi_0_axi_periph/M00_ACLK] [get_bd_pins jtag_axi_0_axi_periph/S00_ACLK] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_locked [get_bd_pins clk_wiz/locked] [get_bd_pins rst_clk_wiz_100M/dcm_locked]
   connect_bd_net -net hlsled_0_o [get_bd_ports led1] [get_bd_pins hlsled_0/o]
-  connect_bd_net -net myrtl_0_led [get_bd_ports led0] [get_bd_pins myrtl_0/led]
+  connect_bd_net -net hoge_1 [get_bd_ports hoge] [get_bd_pins ila_0/probe0]
+  connect_bd_net -net led0_1 [get_bd_ports led0] [get_bd_pins ila_0/probe1]
   connect_bd_net -net reset_rtl_1 [get_bd_ports reset] [get_bd_pins clk_wiz/reset] [get_bd_pins rst_clk_wiz_100M/ext_reset_in]
-  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins hlsled_0/ap_rst_n] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins jtag_axi_0_axi_periph/ARESETN] [get_bd_pins jtag_axi_0_axi_periph/M00_ARESETN] [get_bd_pins jtag_axi_0_axi_periph/S00_ARESETN] [get_bd_pins myrtl_0/resetn] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
+  connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_ports aresetn] [get_bd_pins JTAG/aresetn] [get_bd_pins hlsled_0/ap_rst_n] [get_bd_pins jtag_axi_0_axi_periph/ARESETN] [get_bd_pins jtag_axi_0_axi_periph/M00_ARESETN] [get_bd_pins jtag_axi_0_axi_periph/S00_ARESETN] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn]
   connect_bd_net -net sys_clock_1 [get_bd_ports sys_clock] [get_bd_pins clk_wiz/clk_in1]
 
   # Create address segments
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs hlsled_0/s_axi_control/Reg] -force
+  assign_bd_address -offset 0x00020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces JTAG/Data] [get_bd_addr_segs hlsled_0/s_axi_control/Reg] -force
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -304,4 +273,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
