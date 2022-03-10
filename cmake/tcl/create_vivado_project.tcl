@@ -65,14 +65,14 @@ if { "$top_module_name" != "" } {
   set_property top ${top_module_name} [current_fileset]
 }
 
-# load dfe setting tcl file
-if { [info exists ::env(VIVADO_DFE_TCL)] } {
+# load dfx setting tcl file
+if { [info exists ::env(VIVADO_DFX_TCL)] } {
   puts "INFO: Enable Dynamic Function eXchange"
-  if { [file exists $env(VIVADO_DFE_TCL)] } {
+  if { [file exists $env(VIVADO_DFX_TCL)] } {
     set_property PR_FLOW 1 [current_project]
-    source $env(VIVADO_DFE_TCL)
+    source $env(VIVADO_DFX_TCL)
   } else {
-    puts "ERROR!! Source file $env(VIVADO_DFE_TCL) is not found"
+    puts "ERROR!! Source file $env(VIVADO_DFX_TCL) is not found"
     exit 1
   }
 }

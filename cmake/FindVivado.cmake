@@ -76,7 +76,7 @@ add_custom_target(xsdb
 #    [DEPENDS <target>...]
 #    [TCL1   <tcl file>]
 #    [TCL2   <tcl file>]
-#    [DFE    <tcl file>]
+#    [DFX    <tcl file>]
 # )
 #
 # Define Targets:
@@ -110,14 +110,14 @@ add_custom_target(xsdb
 #  DESIGN     : Design tcl file
 #  DEPENDS    : depends
 #  TCL1       : Tcl script file. This file will be loaded after adding RTL/constraints files in `create_vivado_project.tcl`.
-#  DFE        : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
+#  DFX        : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 #  TCL2       : Tcl script file. This file will be loaded before closeing project in `create_vivado_project.tcl`.
 #
 function(add_vivado_project project)
   cmake_parse_arguments(
     VIVADO_ADD_PROJECT
     ""
-    "BOARD;DESIGN;DIR;TOP;TCL1;TCL2;DFE"
+    "BOARD;DESIGN;DIR;TOP;TCL1;TCL2;DFX"
     "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS"
     ${ARGN}
   )
@@ -186,9 +186,9 @@ function(add_vivado_project project)
     endif()
   endif()
 
-  if(VIVADO_ADD_PROJECT_DFE)
-    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_DFE})
-      set(VIVADO_ADD_PROJECT_DFE ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_DFE})
+  if(VIVADO_ADD_PROJECT_DFX)
+    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_DFX})
+      set(VIVADO_ADD_PROJECT_DFX ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_DFX})
     endif()
   endif()
 
@@ -222,7 +222,7 @@ function(add_vivado_project project)
       VIVADO_IP_DIRECTORIES="${VIVADO_ADD_PROJECT_IP_0}"
       VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL1}"
       VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL2}"
-      VIVADO_DFE_TCL="${VIVADO_ADD_PROJECT_DFE}"
+      VIVADO_DFX_TCL="${VIVADO_ADD_PROJECT_DFX}"
       # Call vivado
       ${VIVADO_EXE}
         -mode batch
