@@ -9,7 +9,7 @@
 #
 
 #default value
-set(VIVADO_DEFAULT_IMPL "impl_1")
+set(VIVADO_DEFAULT_IMPL impl_1)
 
 # find path
 find_path(VIVADO_BIN_DIR
@@ -64,6 +64,7 @@ set(VIVADO_WRITE_BITSTREAM ${VIVADO_XSDB_EXE} ${VIVADO_TCL_DIR}/xsdb_program.tcl
 add_custom_target(xsdb
   COMMAND ${VIVADO_XSDB_EXE}
 )
+
 # add_vivado_project(
 #    <project>
 #    BOARD <board name>
@@ -81,6 +82,18 @@ add_custom_target(xsdb
 #
 # Define Targets:
 #  ${project}                : Create Vivado project
+#                            :    target property:
+#                            :        PROJECT_NAME   : project name
+#                            :        PROJECT_DIR    : project directory path
+#                            :        PROJECT_FILE   : xpr file path
+#                            :        RUNS_DIR       : .runs directory path
+#                            :        IMPL           : default implementation name
+#                            :        IMPLS          : implementation list
+#                            :        TOP_MODULE     : top module name
+#                            :        TOP_BITSTREAM  : top bit stream path
+#                            :        TOP_LTX        : top bit stream ltx path
+#                            :        IMPL_TARGET    : implementation target name
+#                            :
 #  open_${project}           : Open project in vivado
 #  clear_${project}          : Delete Vivado project directory
 #  impl_${project}           : Create bit stream (run impl)
@@ -112,6 +125,7 @@ add_custom_target(xsdb
 #  TCL1       : Tcl script file. This file will be loaded after adding RTL/constraints files in `create_vivado_project.tcl`.
 #  DFX        : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 #  TCL2       : Tcl script file. This file will be loaded before closeing project in `create_vivado_project.tcl`.
+#  IMPLEMENTS : impelmentation name list
 #
 function(add_vivado_project project)
   cmake_parse_arguments(
@@ -134,10 +148,6 @@ function(add_vivado_project project)
   # set default option value
   if(NOT VIVADO_ADD_PROJECT_DIR)
     set(VIVADO_ADD_PROJECT_DIR "${project}.prj")
-  endif()
-
-  if(NOT VIVADO_ADD_PROJECT_IMPLEMENTS)
-    set(VIVADO_ADD_PROJECT_IMPLEMENTS ${VIVADO_DEFAULT_IMPL})
   endif()
 
   # fix relative path
@@ -192,12 +202,11 @@ function(add_vivado_project project)
     endif()
   endif()
 
-
   # replace ";" -> " " for tcl scripts
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_RTL_0        "${VIVADO_ADD_PROJECT_RTL_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IP_0         "${VIVADO_ADD_PROJECT_IP_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_CONSTRAINT_0 "${VIVADO_ADD_PROJECT_CONSTRAINT_0}")
-  string(REPLACE ";" " " VIVADO_ADD_PROJECT_IMPLEMENTS "${VIVADO_ADD_PROJECT_IMPLEMENTS}")
+  string(REPLACE ";" " " VIVADO_ADD_PROJECT_IMPLEMENTS_0 "${VIVADO_ADD_PROJECT_IMPLEMENTS}")
 
   # define ${project} target(create Vivado project)
   set(VIVADO_ADD_PROJECT_DIR_0 ${CMAKE_CURRENT_BINARY_DIR}/${VIVADO_ADD_PROJECT_DIR})
@@ -243,11 +252,18 @@ function(add_vivado_project project)
     COMMAND ${VIVADO_EXE} ${VIVADO_ADD_PROJECT_PROJECT} &
   )
 
+  # get default impl name
+  # The next line MUST NOT be moved before defining VIVADO_ADD_PROJECT_IMPLEMENTS_0.
+  # VIVADO_ADD_PROJECT_IMPLEMENTS_0 must be empty when IMPLEMENTS is not defined.
+  if(NOT VIVADO_ADD_PROJECT_IMPLEMENTS)
+    set(VIVADO_ADD_PROJECT_IMPLEMENTS ${VIVADO_DEFAULT_IMPL})
+  endif()
+  list(GET ${VIVADO_ADD_PROJECT_IMPLEMENTS} 0 VIVADO_ADD_PROJECT_DEFAULT_IMPL)
+
   # synthesis,impl,gen bitstream target
-  set(VIVADO_ADD_PROJECT_BIT ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.bit)
-  set(VIVADO_ADD_PROJECT_LTX ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs/impl_1/${VIVADO_ADD_PROJECT_TOP}.ltx)
-  set(VIVADO_ADD_PROJECT_BIT_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.bit)
-  set(VIVADO_ADD_PROJECT_LTX_COPY ${VIVADO_CMAKE_BINARY_DIR}/bit/${project}.ltx)
+  set(VIVADO_ADD_PROJECT_RUNS_DIR ${VIVADO_ADD_PROJECT_DIR_0}/${project}.runs)
+  set(VIVADO_ADD_PROJECT_BIT ${VIVADO_ADD_PROJECT_RUNS_DIR}/${VIVADO_ADD_PROJECT_DEFAULT_IMPL}/${VIVADO_ADD_PROJECT_TOP}.bit)
+  set(VIVADO_ADD_PROJECT_LTX ${VIVADO_ADD_PROJECT_RUNS_DIR}/${VIVADO_ADD_PROJECT_DEFAULT_IMPL}/${VIVADO_ADD_PROJECT_TOP}.ltx)
 
   #    run impl: impl_${project} target
   add_custom_target(impl_${project} SOURCES ${VIVADO_ADD_PROJECT_BIT})
@@ -258,7 +274,7 @@ function(add_vivado_project project)
       # Define global
       VIVADO_DESIGN_TCL=${VIVADO_ADD_PROJECT_DESIGN}
       VIVADO_JOB_SIZE=${VIVADO_JOB_SIZE}
-      VIVADO_IMPLEMENTS="${VIVADO_ADD_PROJECT_IMPLEMENTS}"
+      VIVADO_IMPLEMENTS="${VIVADO_ADD_PROJECT_IMPLEMENTS_0}"
       # Call vivado
       ${VIVADO_EXE}
         -mode batch
@@ -317,5 +333,42 @@ function(add_vivado_project project)
     )
   endif()
 
+  # set target property
+  set_target_properties(${project}
+    PROPERTIES
+      PROJECT_NAME   ${project}
+      PROJECT_DIR    ${VIVADO_ADD_PROJECT_DIR_0}
+      RUNS_DIR       ${VIVADO_ADD_PROJECT_RUNS_DIR}
+      PROJECT_FILE   ${VIVADO_ADD_PROJECT_PROJECT}
+      TOP_MODULE     ${VIVADO_ADD_PROJECT_TOP}
+      TOP_BITSTREAM  ${VIVADO_ADD_PROJECT_BIT}
+      TOP_LTX        ${VIVADO_ADD_PROJECT_LTX}
+      IMPL_TARGET    impl_${project}
+      IMPL           "${VIVADO_ADD_PROJECT_DEFAULT_IMPL}"
+      IMPLS          "${VIVADO_ADD_PROJECT_IMPLEMENTS}"
+  )
+endfunction()
+
+# add_write_bitstream(project target_subname bitstream_path)
+# add new target to write bitstream of project
+#  Argument:
+#      project        : target project
+#      target_subname : write bitstream target name
+#      bitstream_path : bitstream file path from project runs directory
+#
+#  Target:
+#      program_${project}_${target_subname}
+#           Environment:
+#              JTAG    : jtag target
+#              XSDB_URL: (option) connect url
+#           exp) make JTAG=1 program_${project}_${target_subname}
+#
+function(add_write_bitstream project target_subname bitstream_path)
+  add_custom_target(program_${project}_${target_subname}
+    DEPENDS $<TARGET_PROPERTY:${project},IMPL_TARGET>
+    COMMAND ${VIVADO_WRITE_BITSTREAM}
+     $<TARGET_PROPERTY:${project},RUNS_DIR>/${bitstream_path}
+     program_${project}_${target_subname}
+  )
 
 endfunction()

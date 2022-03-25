@@ -101,8 +101,7 @@ set(HLS_CFLAGS -Wall)
 #  TOP      <top module>
 #  PERIOD   <clock period(ns)>
 #  PART     <board part>
-#  SOURCES  <C++ source file>...
-#  [INCDIRS    <include directory>...]
+#  SOURCES  <C++ source file>...#  [INCDIRS    <include directory>...]
 #  [LINK       <link library>...]
 #  [TB_SOURCES <test bench C++ file>...]
 #  [TB_INCDIRS <include directory>...]
@@ -313,6 +312,7 @@ function(add_hls_project project)
     COMMAND
       # Define Environment Variables
       HLS_PROJECT_NAME=${project}
+      HLS_TCL_DIR="${HLS_TCL_DIR}"
       HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
       HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
       HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
@@ -332,18 +332,28 @@ function(add_hls_project project)
   add_custom_target(csynth_${project} SOURCES ${HLS_ADD_PROJECT_CSYNTH_ZIP})
   add_custom_command(
     OUTPUT ${HLS_ADD_PROJECT_CSYNTH_ZIP}
-    DEPENDS create_project_${project}
+    DEPENDS create_project_${project} ${HLS_ADD_PROJECT_SOURCES}
     COMMAND
       # Define Environment Variables
       HLS_PROJECT_NAME=${project}
+      HLS_TCL_DIR="${HLS_TCL_DIR}"
       HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      HLS_PART="${HLS_ADD_PROJECT_PART}"
+      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      # csynth
       HLS_NAME="${HLS_ADD_PROJECT_NAME}"
       HLS_DESCRIPTION="${HLS_ADD_PROJECT_DESCRIPTION}"
       HLS_IPNAME="${HLS_ADD_PROJECT_IPNAME}"
       HLS_IP_TAXONOMY="${HLS_ADD_PROJECT_TAXONOMY}"
       HLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
       HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
-      HLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
   )
@@ -354,10 +364,20 @@ function(add_hls_project project)
     COMMAND
       # Define Environment Variables
       HLS_PROJECT_NAME=${project}
+      HLS_TCL_DIR="${HLS_TCL_DIR}"
       HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      HLS_PART="${HLS_ADD_PROJECT_PART}"
+      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      # cosim
       HLS_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
       HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
-      HLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
   )

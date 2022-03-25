@@ -3,8 +3,7 @@
 #
 #  target: vitis_hls/vivado_hls
 #
-open_project $env(HLS_PROJECT_NAME)
-open_solution $env(HLS_SOLUTION_NAME)
+source $env(HLS_TCL_DIR)/_source_init_hls_project.tcl
 
 csynth_design
 export_design \

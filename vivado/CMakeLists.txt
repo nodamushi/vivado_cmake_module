@@ -11,19 +11,12 @@ add_vivado_project(vivado_study
   DEPENDS    csynth_hlsled
 )
 
-get_target_property(prj_dir vivado_study PROJECT_DIR)
-get_target_property(runs_dir vivado_study RUNS_DIR)
-
-add_custom_target(program_vivado_study_pr0
-  DEPENDS impl_vivado_study
-  COMMAND ${VIVADO_WRITE_BITSTREAM}
-   ${runs_dir}/impl_1/myrtl_myrtl_partial.bit
-   program_vivado_study_pr0 # this target name
+# program_vivado_study_pr0
+add_write_bitstream(vivado_study pr0
+  impl_1/myrtl_myrtl_partial.bit
 )
 
-add_custom_target(program_vivado_study_pr1
-  DEPENDS impl_vivado_study
-  COMMAND ${VIVADO_WRITE_BITSTREAM}
-   ${runs_dir}/child_0_impl_1/myrtl_myled2_partial.bit
-   program_vivado_study_pr1 # this target name
+# program_vivado_study_pr1
+add_write_bitstream(vivado_study pr1
+  child_0_impl_1/myrtl_myled2_partial.bit
 )
