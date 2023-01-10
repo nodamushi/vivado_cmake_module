@@ -13,6 +13,18 @@ set source_directory  [lindex $argv 5]
 # repository top directory
 set root              [lindex $argv 6]
 
+# load user script
+if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
+  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_0) {
+    if { [file exists ${file}] } {
+      source ${file}
+    } else {
+      puts "ERROR!! Source file ${file} not found"
+      exit 1
+    }
+  }
+}
+
 create_project -force $project_name $project_directory
 set_property board $board_name [current_project]
 if { [info exists ::env(VIVADO_IP_DIRECTORIES)] } {
@@ -35,8 +47,8 @@ if { [info exists ::env(VIVADO_CONSTRAINT_LIST)] } {
 }
 
 # load user script
-if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
-  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_0) {
+if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_1)] } {
+  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_1) {
     if { [file exists ${file}] } {
       source ${file}
     } else {
@@ -79,8 +91,8 @@ if { [info exists ::env(VIVADO_DFX_TCL)] } {
 }
 
 # load user script
-if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_1)] } {
-  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_1) {
+if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_2)] } {
+  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_2) {
     if { [file exists ${file}] } {
       source ${file}
     } else {

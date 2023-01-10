@@ -80,6 +80,7 @@ add_custom_target(xsdb
 #    [IP <directory>...]
 #    [DESIGN <tcl file>]
 #    [DEPENDS <target>...]
+#    [TCL0   <tcl file>...]
 #    [TCL1   <tcl file>...]
 #    [TCL2   <tcl file>...]
 #    [DFX    <tcl file>]
@@ -127,6 +128,7 @@ add_custom_target(xsdb
 #  IP         : IP directories
 #  DESIGN     : Design tcl file
 #  DEPENDS    : depends
+#  TCL0       : Tcl script file. This file will be loaded before `create_project` command.
 #  TCL1       : Tcl script file. This file will be loaded after adding RTL/constraints files in `create_vivado_project.tcl`.
 #  DFX        : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 #  TCL2       : Tcl script file. This file will be loaded before closeing project in `create_vivado_project.tcl`.
@@ -137,7 +139,7 @@ function(add_vivado_project project)
     VIVADO_ADD_PROJECT
     ""
     "BOARD;DESIGN;DIR;TOP;DFX"
-    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL1;TCL2"
+    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL0;TCL1;TCL2"
     ${ARGN}
   )
 
@@ -189,6 +191,15 @@ function(add_vivado_project project)
     endif()
   endif()
 
+  set(VIVADO_ADD_PROJECT_TCL0_0)
+  foreach(VIVADO_ADD_PROJECT_PATH IN LISTS VIVADO_ADD_PROJECT_TCL0)
+    if (IS_ABSOLUTE ${VIVADO_ADD_PROJECT_PATH})
+      list(APPEND VIVADO_ADD_PROJECT_TCL0_0 ${VIVADO_ADD_PROJECT_PATH})
+    else()
+      list(APPEND VIVADO_ADD_PROJECT_TCL0_0 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_PATH})
+    endif()
+  endforeach()
+
   set(VIVADO_ADD_PROJECT_TCL1_0)
   foreach(VIVADO_ADD_PROJECT_PATH IN LISTS VIVADO_ADD_PROJECT_TCL1)
     if (IS_ABSOLUTE ${VIVADO_ADD_PROJECT_PATH})
@@ -218,6 +229,7 @@ function(add_vivado_project project)
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IP_0         "${VIVADO_ADD_PROJECT_IP_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_CONSTRAINT_0 "${VIVADO_ADD_PROJECT_CONSTRAINT_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IMPLEMENTS_0 "${VIVADO_ADD_PROJECT_IMPLEMENTS}")
+  string(REPLACE ";" " " VIVADO_ADD_PROJECT_TCL0_1 "${VIVADO_ADD_PROJECT_TCL0_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_TCL1_1 "${VIVADO_ADD_PROJECT_TCL1_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_TCL2_1 "${VIVADO_ADD_PROJECT_TCL2_0}")
 
@@ -234,6 +246,7 @@ function(add_vivado_project project)
     OUTPUT ${VIVADO_ADD_PROJECT_PROJECT}
     DEPENDS
       ${VIVADO_ADD_PROJECT_DEPENDS}
+      ${VIVADO_ADD_PROJECT_TCL0_0}
       ${VIVADO_ADD_PROJECT_TCL1_0}
       ${VIVADO_ADD_PROJECT_TCL2_0}
     COMMAND
@@ -242,8 +255,9 @@ function(add_vivado_project project)
       VIVADO_RTL_LIST="${VIVADO_ADD_PROJECT_RTL_0}"
       VIVADO_CONSTRAINT_LIST="${VIVADO_ADD_PROJECT_CONSTRAINT_0}"
       VIVADO_IP_DIRECTORIES="${VIVADO_ADD_PROJECT_IP_0}"
-      VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL1_1}"
-      VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL2_1}"
+      VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL0_1}"
+      VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL1_1}"
+      VIVADO_CREATE_PROJECT_SOURCE_2="${VIVADO_ADD_PROJECT_TCL2_1}"
       VIVADO_DFX_TCL="${VIVADO_ADD_PROJECT_DFX}"
       # Call vivado
       ${VIVADO_EXE}
