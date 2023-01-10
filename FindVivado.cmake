@@ -9,7 +9,8 @@
 #
 
 #default value
-set(VIVADO_DEFAULT_IMPL impl_1)
+set(VIVADO_DEFAULT_IMPL "impl_1" CACHE STRING "default vivado impl name")
+set(VIVADO_JOB "0" CACHE STRING "vivado implement job size")
 
 # find path
 find_path(VIVADO_BIN_DIR
@@ -42,12 +43,16 @@ get_filename_component(VIVADO_VERSION "${VIVADO_BIN_DIR}" DIRECTORY)
 get_filename_component(VIVADO_VERSION "${VIVADO_VERSION}" NAME)
 
 
-include(ProcessorCount)
-ProcessorCount(VIVADO_JOB_SIZE)
-if(VIVADO_JOB_SIZE EQUAL 0)
-  set(VIVADO_JOB_SIZE 1)
-endif()
 
+if(VIVADO_JOB EQUAL 0)
+  set(VIVADO_JOB_SIZE ${VIVADO_JOB})
+else()
+  include(ProcessorCount)
+  ProcessorCount(VIVADO_JOB_SIZE)
+  if(VIVADO_JOB_SIZE EQUAL 0)
+    set(VIVADO_JOB_SIZE 1)
+  endif()
+endif()
 set(VIVADO_EXE ${VIVADO_BIN_DIR}/vivado)
 
 # xsdb target
@@ -75,8 +80,8 @@ add_custom_target(xsdb
 #    [IP <directory>...]
 #    [DESIGN <tcl file>]
 #    [DEPENDS <target>...]
-#    [TCL1   <tcl file>]
-#    [TCL2   <tcl file>]
+#    [TCL1   <tcl file>...]
+#    [TCL2   <tcl file>...]
 #    [DFX    <tcl file>]
 # )
 #
@@ -131,8 +136,8 @@ function(add_vivado_project project)
   cmake_parse_arguments(
     VIVADO_ADD_PROJECT
     ""
-    "BOARD;DESIGN;DIR;TOP;TCL1;TCL2;DFX"
-    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS"
+    "BOARD;DESIGN;DIR;TOP;DFX"
+    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL1;TCL2"
     ${ARGN}
   )
 
@@ -184,17 +189,23 @@ function(add_vivado_project project)
     endif()
   endif()
 
-  if(VIVADO_ADD_PROJECT_TCL1)
-    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_TCL1})
-      set(VIVADO_ADD_PROJECT_TCL1 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_TCL1})
+  set(VIVADO_ADD_PROJECT_TCL1_0)
+  foreach(VIVADO_ADD_PROJECT_PATH IN LISTS VIVADO_ADD_PROJECT_TCL1)
+    if (IS_ABSOLUTE ${VIVADO_ADD_PROJECT_PATH})
+      list(APPEND VIVADO_ADD_PROJECT_TCL1_0 ${VIVADO_ADD_PROJECT_PATH})
+    else()
+      list(APPEND VIVADO_ADD_PROJECT_TCL1_0 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_PATH})
     endif()
-  endif()
+  endforeach()
 
-  if(VIVADO_ADD_PROJECT_TCL2)
-    if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_TCL2})
-      set(VIVADO_ADD_PROJECT_TCL2 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_TCL2})
+  set(VIVADO_ADD_PROJECT_TCL2_0)
+  foreach(VIVADO_ADD_PROJECT_PATH IN LISTS VIVADO_ADD_PROJECT_TCL2)
+    if (IS_ABSOLUTE ${VIVADO_ADD_PROJECT_PATH})
+      list(APPEND VIVADO_ADD_PROJECT_TCL2_0 ${VIVADO_ADD_PROJECT_PATH})
+    else()
+      list(APPEND VIVADO_ADD_PROJECT_TCL2_0 ${CMAKE_CURRENT_SOURCE_DIR}/${VIVADO_ADD_PROJECT_PATH})
     endif()
-  endif()
+  endforeach()
 
   if(VIVADO_ADD_PROJECT_DFX)
     if (NOT IS_ABSOLUTE ${VIVADO_ADD_PROJECT_DFX})
@@ -207,6 +218,8 @@ function(add_vivado_project project)
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IP_0         "${VIVADO_ADD_PROJECT_IP_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_CONSTRAINT_0 "${VIVADO_ADD_PROJECT_CONSTRAINT_0}")
   string(REPLACE ";" " " VIVADO_ADD_PROJECT_IMPLEMENTS_0 "${VIVADO_ADD_PROJECT_IMPLEMENTS}")
+  string(REPLACE ";" " " VIVADO_ADD_PROJECT_TCL1_1 "${VIVADO_ADD_PROJECT_TCL1_0}")
+  string(REPLACE ";" " " VIVADO_ADD_PROJECT_TCL2_1 "${VIVADO_ADD_PROJECT_TCL2_0}")
 
   # define ${project} target(create Vivado project)
   set(VIVADO_ADD_PROJECT_DIR_0 ${CMAKE_CURRENT_BINARY_DIR}/${VIVADO_ADD_PROJECT_DIR})
@@ -221,16 +234,16 @@ function(add_vivado_project project)
     OUTPUT ${VIVADO_ADD_PROJECT_PROJECT}
     DEPENDS
       ${VIVADO_ADD_PROJECT_DEPENDS}
-      ${VIVADO_ADD_PROJECT_TCL1}
-      ${VIVADO_ADD_PROJECT_TCL2}
+      ${VIVADO_ADD_PROJECT_TCL1_0}
+      ${VIVADO_ADD_PROJECT_TCL2_0}
     COMMAND
       # Define global
       VIVADO_DESIGN_TCL=${VIVADO_ADD_PROJECT_DESIGN}
       VIVADO_RTL_LIST="${VIVADO_ADD_PROJECT_RTL_0}"
       VIVADO_CONSTRAINT_LIST="${VIVADO_ADD_PROJECT_CONSTRAINT_0}"
       VIVADO_IP_DIRECTORIES="${VIVADO_ADD_PROJECT_IP_0}"
-      VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL1}"
-      VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL2}"
+      VIVADO_CREATE_PROJECT_SOURCE_0="${VIVADO_ADD_PROJECT_TCL1_1}"
+      VIVADO_CREATE_PROJECT_SOURCE_1="${VIVADO_ADD_PROJECT_TCL2_1}"
       VIVADO_DFX_TCL="${VIVADO_ADD_PROJECT_DFX}"
       # Call vivado
       ${VIVADO_EXE}

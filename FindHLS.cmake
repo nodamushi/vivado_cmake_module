@@ -13,14 +13,14 @@
 #
 
 # Default Values
-set(HLS_VENDOR_NAME       Anonymous)
-set(HLS_TAXONOMY          Virus)
-set(HLS_SOLUTION_NAME     solution1)
-set(HLS_TRACE_LEVEL       port_hier)
-set(VITIS_HLS_FLOW_TARGET vivado)
-set(HLS_DEFAULT_VERSION   "0.0")
-# generated *.app file name by create_project command
-set(HLS_PROJECT_FILE_NAME hls.app)
+set(HLS_VENDOR_NAME "Anonymous" CACHE STRING "default hls ip vendor name for add_hls_project")
+set(HLS_TAXONOMY "Virus" CACHE STRING "default taxonomy for add_hls_project")
+set(HLS_SOLUTION_NAME "solution1" CACHE STRING "default project solution name")
+set(HLS_TRACE_LEVEL "port_hier" CACHE STRING "default cosim trace level")
+set(VITIS_HLS_FLOW_TARGET "vivado" CACHE STRING  "default vitis hls flow target for add_hls_project")
+set(HLS_DEFAULT_VERSION "0.0" CACHE STRING "default hls ip version")
+set(HLS_PROJECT_FILE_NAME "hls.app" CACHE STRING "default hls project file name.")
+set(HLS_CFLAGS "-Wall" CACHE STRING "default hls compile option")
 
 # find vitis_hls
 find_path(VITIS_HLS_BIN_DIR
@@ -92,9 +92,6 @@ endif()
 # HLS_VERSION: Vitis HLS Version
 get_filename_component(HLS_VERSION "${HLS_BIN_DIR}" DIRECTORY)
 get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
-
-# default clags option
-set(HLS_CFLAGS -Wall)
 
 # add_hls_project(
 #  <project>
@@ -376,7 +373,6 @@ function(add_hls_project project)
       HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
       HLS_IS_VITIS="${HLS_IS_VITIS}"
       # cosim
-      HLS_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
       HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl

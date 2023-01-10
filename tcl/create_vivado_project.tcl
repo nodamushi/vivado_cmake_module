@@ -36,12 +36,13 @@ if { [info exists ::env(VIVADO_CONSTRAINT_LIST)] } {
 
 # load user script
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
-  set VIVADO_CREATE_PROJECT_SOURCE_0 $env(VIVADO_CREATE_PROJECT_SOURCE_0)
-  if { [file exists ${VIVADO_CREATE_PROJECT_SOURCE_0}]} {
-    source ${VIVADO_CREATE_PROJECT_SOURCE_0}
-  } else {
-    puts "ERROR!! Source file ${VIVADO_CREATE_PROJECT_SOURCE_0} not found"
-    exit 1
+  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_0) {
+    if { [file exists ${file}] } {
+      source ${file}
+    } else {
+      puts "ERROR!! Source file ${file} not found"
+      exit 1
+    }
   }
 }
 
@@ -79,12 +80,13 @@ if { [info exists ::env(VIVADO_DFX_TCL)] } {
 
 # load user script
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_1)] } {
-  set VIVADO_CREATE_PROJECT_SOURCE_1 $env(VIVADO_CREATE_PROJECT_SOURCE_1)
-  if { [file exists ${VIVADO_CREATE_PROJECT_SOURCE_1}]} {
-    source ${VIVADO_CREATE_PROJECT_SOURCE_1}
-  } else {
-    puts "ERROR!! Source file ${VIVADO_CREATE_PROJECT_SOURCE_1} not found"
-    exit 1
+  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_1) {
+    if { [file exists ${file}] } {
+      source ${file}
+    } else {
+      puts "ERROR!! Source file ${file} not found"
+      exit 1
+    }
   }
 }
 
