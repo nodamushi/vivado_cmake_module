@@ -1,16 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-project(study)
+cmake_minimum_required(VERSION 3.11)
+project(vivado_cmake_module)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-set(CMAKE_CXX_STANDARD 11)
-find_package(HLS REQUIRED)
-find_package(Vivado REQUIRED)
-
-set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(RTL_DIR ${SRC_DIR}/rtl)
-set(CONSTRAINT_DIR ${SRC_DIR}/constraint)
-set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(BUILD_HLS_DIR ${BUILD_DIR}/src/hls)
-
-add_subdirectory(src)
-add_subdirectory(vivado)
