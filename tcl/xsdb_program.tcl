@@ -10,11 +10,16 @@ if { "$target_name" == "" } {
   set target_name "<name>"
 }
 
-if { [info exists ::env(XSDB_URL)] } {
-  puts "Connect $env(XSDB_URL)"
-  connect -url $env(XSDB_URL)
+if { [info exists ::env(HWSVR)] } {
+  if { [info exists ::env(HWSVRPORT)] } {
+    puts "Connect $env(HWSVR)::$env(HWSVRPORT) hw_server"
+    connect -url $env(HWSVR) -port $env(HWSVRPORT)
+  } else {
+    puts "Connect $env(HWSVR) hw_server"
+    connect -url $env(HWSVR)
+  }
 } else {
-  puts "Connect local server"
+  puts "Connect local hw_server"
   connect
 }
 

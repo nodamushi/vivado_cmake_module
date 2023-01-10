@@ -14,7 +14,7 @@
 
 # Default Values
 set(HLS_VENDOR_NAME "Anonymous" CACHE STRING "default hls ip vendor name for add_hls_project")
-set(HLS_TAXONOMY "Virus" CACHE STRING "default taxonomy for add_hls_project")
+set(HLS_TAXONOMY "UserIP" CACHE STRING "default taxonomy for add_hls_project")
 set(HLS_SOLUTION_NAME "solution1" CACHE STRING "default project solution name")
 set(HLS_TRACE_LEVEL "port_hier" CACHE STRING "default cosim trace level")
 set(VITIS_HLS_FLOW_TARGET "vivado" CACHE STRING  "default vitis hls flow target for add_hls_project")

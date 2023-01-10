@@ -105,8 +105,9 @@ add_custom_target(xsdb
 #  impl_${project}           : Create bit stream (run impl)
 #  program_${project}        : Write bitstream
 #                            :   Environment:
-#                            :      JTAG    : jtag target
-#                            :      XSDB_URL: (option) connect url
+#                            :      JTAG     : jtag target
+#                            :      HWSVR    : (option) connect url
+#                            :      HWSVRPORT: (option) connect port
 #                            :   exp) make JTAG=1 program_${project}
 #  export_bd_${project}      : Save IP Integrator design tcl file
 #  report_addr_${project}    : Report address
@@ -386,8 +387,9 @@ endfunction()
 #  Target:
 #      program_${project}_${target_subname}
 #           Environment:
-#              JTAG    : jtag target
-#              XSDB_URL: (option) connect url
+#              JTAG     : jtag target
+#              HWSVR    : (option) connect url
+#              HWSVRPORT: (option) connect port
 #           exp) make JTAG=1 program_${project}_${target_subname}
 #
 function(add_write_bitstream project target_subname bitstream_path)
