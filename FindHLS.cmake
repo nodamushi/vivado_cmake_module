@@ -71,10 +71,10 @@ mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR HLS
 # find package
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(HLS
-REQUIRED_VARS
-HLS_BIN_DIR
-HLS_INCLUDE_DIR
-HLS_TCL_DIR
+  REQUIRED_VARS
+  HLS_BIN_DIR
+  HLS_INCLUDE_DIR
+  HLS_TCL_DIR
 )
 
 # reset HLS_EXEC
@@ -82,11 +82,11 @@ set(HLS_EXEC ${HLS_BIN_DIR}/${HLS_EXEC})
 
 # provide HLS::HLS
 if(HLS_FOUND AND NOT TARGET HLS::HLS)
-add_library(HLS::HLS INTERFACE IMPORTED)
-set_target_properties(HLS::HLS
-PROPERTIES
-INTERFACE_INCLUDE_DIRECTORIES ${HLS_INCLUDE_DIR}
-)
+  add_library(HLS::HLS INTERFACE IMPORTED)
+  set_target_properties(HLS::HLS
+    PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES ${HLS_INCLUDE_DIR}
+  )
 endif()
 
 # HLS_VERSION: Vitis HLS Version
