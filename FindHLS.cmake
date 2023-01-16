@@ -299,9 +299,14 @@ function(add_hls_project project)
     if (${HLS_ADD_PROJECT_LINK_TYPE} STREQUAL "INTERFACE_LIBRARY")
       get_target_property(HLS_ADD_PROJECT_LINK_DIR ${HLS_ADD_PROJECT_LINK_LIB} INTERFACE_INCLUDE_DIRECTORIES)
     elseif(${HLS_ADD_PROJECT_LINK_TYPE} STREQUAL "STATIC_LIBRARY")
+      get_target_property(HLS_ADD_PROJECT_LINK_OUTDIR ${HLS_ADD_PROJECT_LINK_LIB} LIBRARY_OUTPUT_DIRECTORY)
+      if (NOT HLS_ADD_PROJECT_LINK_OUTDIR)
+        get_target_property(HLS_ADD_PROJECT_LINK_OUTDIR ${HLS_ADD_PROJECT_LINK_LIB} BINARY_DIR)
+      endif()
+      list(APPEND HLS_ADD_PROJECT_COSIM_LDFLAGS -L${HLS_ADD_PROJECT_LINK_OUTDIR})
+
       get_target_property(HLS_ADD_PROJECT_LINK_DIR ${HLS_ADD_PROJECT_LINK_LIB} INCLUDE_DIRECTORIES)
       get_target_property(HLS_ADD_PROJECT_LINK_NAME ${HLS_ADD_PROJECT_LINK_LIB} NAME)
-      get_target_property(HLS_ADD_PROJECT_LINK_HOGE ${HLS_ADD_PROJECT_LINK_LIB} LINK_LIBRARIES)
       list(APPEND HLS_ADD_PROJECT_COSIM_LDFLAGS -l${HLS_ADD_PROJECT_LINK_NAME})
     else()
       message(FATAL_ERROR "TB_LINK: `${HLS_ADD_PROJECT_LINK_LIB}` is not a library")
@@ -325,7 +330,6 @@ function(add_hls_project project)
     PUBLIC
       HLS::HLS
       ${HLS_ADD_PROJECT_LINK}
-      gtest
   )
   target_include_directories(lib_${project}
     PUBLIC
@@ -382,7 +386,7 @@ function(add_hls_project project)
       NHLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
       NHLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
-      ${HLS_EXEC} ${HLS_TCL_DIR}/create_hls_project.tcl
+      ${HLS_EXEC} -f ${HLS_TCL_DIR}/create_hls_project.tcl
   )
 
   # synthesis target
@@ -412,7 +416,7 @@ function(add_hls_project project)
       NHLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
       NHLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
       # Call ${HLS_EXEC}
-      ${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
+      ${HLS_EXEC} -f ${HLS_TCL_DIR}/csynth.tcl
   )
 
   # C/RTL simulation target
@@ -436,7 +440,7 @@ function(add_hls_project project)
       NHLS_COSIM_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
       NHLS_COSIM_TRACE_LEVEL="${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}"
       # Call ${HLS_EXEC}
-      ${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
+      ${HLS_EXEC} -f ${HLS_TCL_DIR}/cosim.tcl
   )
 
 
