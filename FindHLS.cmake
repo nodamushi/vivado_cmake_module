@@ -20,7 +20,7 @@ set(HLS_TRACE_LEVEL "port_hier" CACHE STRING "default cosim trace level")
 set(VITIS_HLS_FLOW_TARGET "vivado" CACHE STRING  "default vitis hls flow target for add_hls_project")
 set(HLS_DEFAULT_VERSION "0.0" CACHE STRING "default hls ip version")
 set(HLS_PROJECT_FILE_NAME "hls.app" CACHE STRING "default hls project file name.")
-set(HLS_CFLAGS "-Wall" CACHE STRING "default hls compile option")
+set(HLS_CFLAGS "" CACHE STRING "default hls compile option")
 
 # find vitis_hls
 find_path(VITIS_HLS_BIN_DIR
@@ -144,7 +144,9 @@ get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
 #  TB_INCDIRS    : Include directories for test bench
 #  DEPENDS       : Dependency for create project
 #  LINK          : Link library
-#  TB_LINK     : Link library for testing
+#  TB_LINK       : Link library for testing
+#  CFLAG         : additional cflag
+#  TB_CFLAG      : additional cflag for test bench
 #  COSIM_LDFLAGS : cosim_design -ldflags
 #  COSIM_TRACE_LEVEL: none, all, port, port_hier
 #  FLOW_TARGET   : (vitis_hls only). vivado, vitis
@@ -154,7 +156,7 @@ function(add_hls_project project)
     HLS_ADD_PROJECT
     ""
     "TOP;PERIOD;PART;SOLUTION;FLOW_TARGET;VERSION;DESCRIPTION;NAME;IPNAME;TAXONOMY;VENDOR;COSIM_TRACE_LEVEL"
-    "SOURCES;TB_SOURCES;INCDIRS;TB_INCDIRS;DEPENDS;LINK;TB_LINK;COSIM_LDFLAGS"
+    "SOURCES;TB_SOURCES;INCDIRS;TB_INCDIRS;DEPENDS;LINK;TB_LINK;COSIM_LDFLAGS;CFLAG;TB_CFLAG"
     ${ARGN}
   )
 
@@ -214,6 +216,8 @@ function(add_hls_project project)
     set(HLS_ADD_PROJECT_COSIM_TRACE_LEVEL ${HLS_TRACE_LEVEL})
   endif()
 
+  list(APPEND HLS_ADD_PROJECT_COSIM_LDFLAGS "-L${HLS_CMAKE_LIB_DIR}")
+
   # fix relative path
   set(HLS_ADD_PROJECT_SOURCES_0)
   foreach(HLS_ADD_PROJECT_SRC IN LISTS HLS_ADD_PROJECT_SOURCES)
@@ -234,7 +238,12 @@ function(add_hls_project project)
   endforeach()
 
   # create -I** option
-  set(HLS_ADD_PROJECT_CFLAG ${HLS_CFLAGS} -I${CMAKE_CURRENT_SOURCE_DIR})
+  if (NOT HLS_ADD_PROJECT_CFLAG)
+    set(HLS_ADD_PROJECT_CFLAG ${HLS_CFLAGS} -I${CMAKE_CURRENT_SOURCE_DIR})
+  else()
+    list(APPEND HLS_ADD_PROJECT_CFLAG ${HLS_CFLAGS} -I${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
+
   foreach(HLS_ADD_PROJECT_INCDIR IN LISTS HLS_ADD_PROJECT_INCDIRS)
     if (IS_ABSOLUTE ${HLS_ADD_PROJECT_INCDIR})
       list(APPEND HLS_ADD_PROJECT_CFLAG -I${HLS_ADD_PROJECT_INCDIR})
@@ -252,7 +261,31 @@ function(add_hls_project project)
     endif()
   endforeach()
 
-  set(HLS_ADD_PROJECT_TB_CFLAG ${HLS_ADD_PROJECT_CFLAG})
+  foreach(HLS_ADD_PROJECT_LINK_LIB IN LISTS HLS_ADD_PROJECT_LINK)
+    get_target_property(HLS_ADD_PROJECT_LINK_TYPE ${HLS_ADD_PROJECT_LINK_LIB} TYPE)
+    if (NOT ${HLS_ADD_PROJECT_LINK_TYPE} STREQUAL "INTERFACE_LIBRARY")
+      # TODO: support lib
+      #       How to append lib name to the list?
+      message(FATAL_ERROR "LINK: `${HLS_ADD_PROJECT_LINK_LIB}` is not an INTERFACE library")
+    endif()
+
+    get_target_property(HLS_ADD_PROJECT_LINK_DIR ${HLS_ADD_PROJECT_LINK_LIB} INTERFACE_INCLUDE_DIRECTORIES)
+    foreach(HLS_ADD_PROJECT_INCDIR ${HLS_ADD_PROJECT_LINK_DIR})
+      if (NOT IS_ABSOLUTE ${HLS_ADD_PROJECT_INCDIR})
+        get_filename_component(HLS_ADD_PROJECT_INCDIR ${HLS_ADD_PROJECT_INCDIR} ABSOLUTE)
+      endif()
+      if (NOT ${HLS_ADD_PROJECT_INCDIR} STREQUAL ${HLS_INCLUDE_DIR})
+        list(APPEND HLS_ADD_PROJECT_CFLAG -I${HLS_ADD_PROJECT_INCDIR})
+      endif()
+    endforeach()
+  endforeach()
+
+  if (NOT HLS_ADD_PROJECT_TB_CFLAG)
+    set(HLS_ADD_PROJECT_TB_CFLAG ${HLS_ADD_PROJECT_CFLAG})
+  else()
+    list(APPEND HLS_ADD_PROJECT_TB_CFLAG ${HLS_ADD_PROJECT_CFLAG})
+  endif()
+
   foreach(HLS_ADD_PROJECT_INCDIR IN LISTS HLS_ADD_PROJECT_TB_INCDIRS )
     if (IS_ABSOLUTE ${HLS_ADD_PROJECT_INCDIR})
       list(APPEND HLS_ADD_PROJECT_TB_CFLAG -I${HLS_ADD_PROJECT_INCDIR})
@@ -261,12 +294,38 @@ function(add_hls_project project)
     endif()
   endforeach()
 
+  foreach(HLS_ADD_PROJECT_LINK_LIB IN LISTS HLS_ADD_PROJECT_TB_LINK)
+    get_target_property(HLS_ADD_PROJECT_LINK_TYPE ${HLS_ADD_PROJECT_LINK_LIB} TYPE)
+    if (${HLS_ADD_PROJECT_LINK_TYPE} STREQUAL "INTERFACE_LIBRARY")
+      get_target_property(HLS_ADD_PROJECT_LINK_DIR ${HLS_ADD_PROJECT_LINK_LIB} INTERFACE_INCLUDE_DIRECTORIES)
+    elseif(${HLS_ADD_PROJECT_LINK_TYPE} STREQUAL "STATIC_LIBRARY")
+      get_target_property(HLS_ADD_PROJECT_LINK_DIR ${HLS_ADD_PROJECT_LINK_LIB} INCLUDE_DIRECTORIES)
+      get_target_property(HLS_ADD_PROJECT_LINK_NAME ${HLS_ADD_PROJECT_LINK_LIB} NAME)
+      get_target_property(HLS_ADD_PROJECT_LINK_HOGE ${HLS_ADD_PROJECT_LINK_LIB} LINK_LIBRARIES)
+      list(APPEND HLS_ADD_PROJECT_COSIM_LDFLAGS -l${HLS_ADD_PROJECT_LINK_NAME})
+    else()
+      message(FATAL_ERROR "TB_LINK: `${HLS_ADD_PROJECT_LINK_LIB}` is not a library")
+    endif()
+
+    foreach(HLS_ADD_PROJECT_INCDIR ${HLS_ADD_PROJECT_LINK_DIR})
+
+      if (NOT IS_ABSOLUTE ${HLS_ADD_PROJECT_INCDIR})
+        get_filename_component(HLS_ADD_PROJECT_INCDIR ${HLS_ADD_PROJECT_INCDIR} ABSOLUTE)
+      endif()
+      if (NOT ${HLS_ADD_PROJECT_INCDIR} STREQUAL ${HLS_INCLUDE_DIR})
+        list(APPEND HLS_ADD_PROJECT_TB_CFLAG -I${HLS_ADD_PROJECT_INCDIR})
+      endif()
+    endforeach()
+
+  endforeach()
+
   # define compile target
   add_library(lib_${project} STATIC ${HLS_ADD_PROJECT_SOURCES})
   target_link_libraries(lib_${project}
     PUBLIC
       HLS::HLS
       ${HLS_ADD_PROJECT_LINK}
+      gtest
   )
   target_include_directories(lib_${project}
     PUBLIC
@@ -291,15 +350,17 @@ function(add_hls_project project)
     set(HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS test_${project})
   endif()
 
+
   # replace ";" -> " " for tcl scripts
-  string(REPLACE ";" " " HLS_ADD_PROJECT_SOURCES_0 "${HLS_ADD_PROJECT_SOURCES_0}")
-  string(REPLACE ";" " " HLS_ADD_PROJECT_TB_SOURCES_0 "${HLS_ADD_PROJECT_TB_SOURCES_0}")
-  string(REPLACE ";" " " HLS_ADD_PROJECT_CFLAG "${HLS_ADD_PROJECT_CFLAG}")
-  string(REPLACE ";" " " HLS_ADD_PROJECT_TB_CFLAG "${HLS_ADD_PROJECT_TB_CFLAG}")
-  string(REPLACE ";" " " HLS_ADD_PROJECT_COSIM_LDFLAGS "-L${HLS_CMAKE_LIB_DIR};${HLS_ADD_PROJECT_COSIM_LDFLAGS}")
+  # string(REPLACE ";" " " HLS_ADD_PROJECT_SOURCES_0 "${HLS_ADD_PROJECT_SOURCES_0}")
+  # string(REPLACE ";" " " HLS_ADD_PROJECT_TB_SOURCES_0 "${HLS_ADD_PROJECT_TB_SOURCES_0}")
+  # string(REPLACE ";" " " HLS_ADD_PROJECT_CFLAG "${HLS_ADD_PROJECT_CFLAG}")
+  # string(REPLACE ";" " " HLS_ADD_PROJECT_TB_CFLAG "${HLS_ADD_PROJECT_TB_CFLAG}")
+  # string(REPLACE ";" " " HLS_ADD_PROJECT_COSIM_LDFLAGS "${HLS_ADD_PROJECT_COSIM_LDFLAGS}")
 
   # define vitis hls project target
-  set(HLS_ADD_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${project})
+  set(HLS_ADD_PROJECT_PROJECT_NAME "${project}_hls_prj")
+  set(HLS_ADD_PROJECT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${HLS_ADD_PROJECT_PROJECT_NAME})
   set(HLS_ADD_PROJECT_PROJECT ${HLS_ADD_PROJECT_DIR}/${HLS_PROJECT_FILE_NAME})
 
   add_custom_target(create_project_${project} SOURCES ${HLS_ADD_PROJECT_PROJECT})
@@ -308,18 +369,18 @@ function(add_hls_project project)
     DEPENDS ${HLS_ADD_PROJECT_DEPENDS} ${HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS}
     COMMAND
       # Define Environment Variables
-      HLS_PROJECT_NAME=${project}
-      HLS_TCL_DIR="${HLS_TCL_DIR}"
-      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
-      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
-      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
-      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
-      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
-      HLS_PART="${HLS_ADD_PROJECT_PART}"
-      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
-      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
-      HLS_IS_VITIS="${HLS_IS_VITIS}"
+      NHLS_PROJECT_NAME=${HLS_ADD_PROJECT_PROJECT_NAME}
+      NHLS_TCL_DIR="${HLS_TCL_DIR}"
+      NHLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      NHLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      NHLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      NHLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      NHLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      NHLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      NHLS_PART="${HLS_ADD_PROJECT_PART}"
+      NHLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      NHLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      NHLS_IS_VITIS="${HLS_IS_VITIS}"
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/create_hls_project.tcl
   )
@@ -332,25 +393,24 @@ function(add_hls_project project)
     DEPENDS create_project_${project} ${HLS_ADD_PROJECT_SOURCES}
     COMMAND
       # Define Environment Variables
-      HLS_PROJECT_NAME=${project}
-      HLS_TCL_DIR="${HLS_TCL_DIR}"
-      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
-      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
-      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
-      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
-      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
-      HLS_PART="${HLS_ADD_PROJECT_PART}"
-      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
-      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
-      HLS_IS_VITIS="${HLS_IS_VITIS}"
-      # csynth
-      HLS_NAME="${HLS_ADD_PROJECT_NAME}"
-      HLS_DESCRIPTION="${HLS_ADD_PROJECT_DESCRIPTION}"
-      HLS_IPNAME="${HLS_ADD_PROJECT_IPNAME}"
-      HLS_IP_TAXONOMY="${HLS_ADD_PROJECT_TAXONOMY}"
-      HLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
-      HLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
+      NHLS_PROJECT_NAME=${HLS_ADD_PROJECT_PROJECT_NAME}
+      NHLS_TCL_DIR="${HLS_TCL_DIR}"
+      NHLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      NHLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      NHLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      NHLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      NHLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      NHLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      NHLS_PART="${HLS_ADD_PROJECT_PART}"
+      NHLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      NHLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      NHLS_IS_VITIS="${HLS_IS_VITIS}"
+      NHLS_NAME="${HLS_ADD_PROJECT_NAME}"
+      NHLS_DESCRIPTION="${HLS_ADD_PROJECT_DESCRIPTION}"
+      NHLS_IPNAME="${HLS_ADD_PROJECT_IPNAME}"
+      NHLS_IP_TAXONOMY="${HLS_ADD_PROJECT_TAXONOMY}"
+      NHLS_IP_VENDOR="${HLS_ADD_PROJECT_VENDOR}"
+      NHLS_IP_VERSION="${HLS_ADD_PROJECT_VERSION}"
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/csynth.tcl
   )
@@ -358,25 +418,27 @@ function(add_hls_project project)
   # C/RTL simulation target
   add_custom_target(cosim_${project}
     DEPENDS csynth_${project}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND
       # Define Environment Variables
-      HLS_PROJECT_NAME=${project}
-      HLS_TCL_DIR="${HLS_TCL_DIR}"
-      HLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
-      HLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
-      HLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
-      HLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
-      HLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
-      HLS_TOP="${HLS_ADD_PROJECT_TOP}"
-      HLS_PART="${HLS_ADD_PROJECT_PART}"
-      HLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
-      HLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
-      HLS_IS_VITIS="${HLS_IS_VITIS}"
-      # cosim
-      HLS_COSIM_TRACE_LEVEL=${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}
+      NHLS_PROJECT_NAME=${HLS_ADD_PROJECT_PROJECT_NAME}
+      NHLS_TCL_DIR="${HLS_TCL_DIR}"
+      NHLS_SOLUTION_NAME="${HLS_ADD_PROJECT_SOLUTION}"
+      NHLS_CFLAGS="${HLS_ADD_PROJECT_CFLAG}"
+      NHLS_TB_CFLAGS="${HLS_ADD_PROJECT_TB_CFLAG}"
+      NHLS_SOURCES="${HLS_ADD_PROJECT_SOURCES_0}"
+      NHLS_TB_SOURCES="${HLS_ADD_PROJECT_TB_SOURCES_0}"
+      NHLS_TOP="${HLS_ADD_PROJECT_TOP}"
+      NHLS_PART="${HLS_ADD_PROJECT_PART}"
+      NHLS_PERIOD="${HLS_ADD_PROJECT_PERIOD}"
+      NHLS_FLOW_TARGET="${HLS_ADD_PROJECT_FLOW_TARGET}"
+      NHLS_IS_VITIS="${HLS_IS_VITIS}"
+      NHLS_COSIM_LDFLAGS="${HLS_ADD_PROJECT_COSIM_LDFLAGS}"
+      NHLS_COSIM_TRACE_LEVEL="${HLS_ADD_PROJECT_COSIM_TRACE_LEVEL}"
       # Call ${HLS_EXEC}
       ${HLS_EXEC} ${HLS_TCL_DIR}/cosim.tcl
   )
+
 
   # delete project target
   add_custom_target(clear_${project}
@@ -391,3 +453,48 @@ function(add_hls_project project)
 
 endfunction()
 
+#
+# Define header only library for Vivado/Vitis HLS
+#
+# add_hls_interface(project
+#   [INCDIRS <directory>...]
+#   [DEPENDS <target>...]
+# )
+#
+# Argument:
+#   project: interface library target name
+#
+# Options:
+#  INCDIRS: header directories.
+#           If this option is not specified, the current directory is set.
+#  DEPENDS: depends targets
+#
+# Targets:
+#   ${project}: interface library target
+#
+function(add_hls_interface project)
+  cmake_parse_arguments(
+    HLS_ADD_INTERFACE
+    ""
+    ""
+    "INCDIRS;DEPENDS;"
+    ${ARGN}
+  )
+  add_library(${project} INTERFACE)
+  if(NOT HLS_ADD_INTERFACE_INCDIRS)
+    target_include_directories(${project}
+      INTERFACE
+        ${HLS_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR} # default
+    )
+  else()
+    target_include_directories(${project}
+      INTERFACE
+        ${HLS_INCLUDE_DIR}
+        ${HLS_ADD_INTERFACE_INCDIRS}
+    )
+  endif()
+  if (HLS_ADD_INTERFACE_DEPENDS)
+    add_dependencies(${project} ${HLS_ADD_INTERFACE_DEPENDS})
+  endif()
+endfunction()

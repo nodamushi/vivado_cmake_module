@@ -97,7 +97,7 @@ find_package(Vivado)
 ```cmake
 add_vivado_project(
    <project>
-   BOARD <board name>
+   BOARD <board part name>
    TOP   <top module>
    [DIR <directory name>]
    [RTL <file/directory>...]
@@ -109,6 +109,7 @@ add_vivado_project(
    [TCL1   <tcl file>...]
    [TCL2   <tcl file>...]
    [DFX    <tcl file>]
+   [IMPLEMENTS <implimentation name>...]
 )
 ```
 
@@ -118,7 +119,7 @@ add_vivado_project(
 
 #### Taged Arguments
 
-- `BOARD`  : board property
+- `BOARD`  : Board property. When `*` is contained, find board part by Vivado command `[get_board_parts -quiet -latest_file_version <BOARD>]` .
 - `TOP`    : Top module name
 
 #### Options
@@ -131,8 +132,8 @@ add_vivado_project(
 - `DEPENDS   ` : depends
 - `TCL0      ` : Tcl script files. This file will be loaded before `create_project` command.
 - `TCL1      ` : Tcl script files. This file will be loaded after adding RTL/constraints files in `create_vivado_project.tcl`.
-- `DFX       ` : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 - `TCL2      ` : Tcl script files. This file will be loaded before closeing project in `create_vivado_project.tcl`.
+- `DFX       ` : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 - `IMPLEMENTS` : impelmentation name list
 
 
@@ -224,7 +225,8 @@ add_hls_project(
  TOP      <top module>
  PERIOD   <clock period(ns)>
  PART     <board part>
- SOURCES  <C++ source file>...#  [INCDIRS    <include directory>...]
+ SOURCES  <C++ source file>...
+ [INCDIRS    <include directory>...]
  [LINK       <link library>...]
  [TB_SOURCES <test bench C++ file>...]
  [TB_INCDIRS <include directory>...]

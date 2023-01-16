@@ -1,22 +1,29 @@
 # source from tcl files
 # initialize project
-open_project $env(HLS_PROJECT_NAME)
+open_project $env(NHLS_PROJECT_NAME)
 
-foreach src $env(HLS_SOURCES) {
-  add_files ${src} -cflags $env(HLS_CFLAGS)
-}
-
-if { [info exists ::env(HLS_TB_SOURCES)] } {
-  foreach src $env(HLS_TB_SOURCES) {
-    add_files -tb ${src} -cflags $env(HLS_TB_CFLAGS)
+if { [info exists ::env(NHLS_SOURCES)] } {
+  set cflags ""
+  if { [info exists ::env(NHLS_CFLAGS)] } {
+    set cflags [string map {";" " "} $env(NHLS_CFLAGS)]
   }
+
+  add_files -cflags "$env(NHLS_CFLAGS)" [string map {";" " "} $env(NHLS_SOURCES)]
 }
 
-set_top $env(HLS_TOP)
-if { $env(HLS_IS_VITIS) == "TRUE" } {
-  open_solution $env(HLS_SOLUTION_NAME) -flow_target $env(HLS_FLOW_TARGET)
-} else {
-  open_solution $env(HLS_SOLUTION_NAME)
+if { [info exists ::env(NHLS_TB_SOURCES)] } {
+  set tbcflags ""
+  if { [info exists ::env(NHLS_TB_CFLAGS)] } {
+    set tbcflags [string map {";" " "} $env(NHLS_TB_CFLAGS)]
+  }
+  add_files -tb -cflags "$tbcflags" [string map {";" " "} $env(NHLS_TB_SOURCES)]
 }
-set_part $env(HLS_PART)
-create_clock -period $env(HLS_PERIOD) -name default
+
+set_top $env(NHLS_TOP)
+if { $env(NHLS_IS_VITIS) == "TRUE" } {
+  open_solution $env(NHLS_SOLUTION_NAME) -flow_target $env(NHLS_FLOW_TARGET)
+} else {
+  open_solution $env(NHLS_SOLUTION_NAME)
+}
+set_part $env(NHLS_PART)
+create_clock -period $env(NHLS_PERIOD) -name default

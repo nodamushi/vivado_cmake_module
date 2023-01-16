@@ -3,12 +3,12 @@
 #
 #  target: vitis_hls/vivado_hls
 #
-open_project $env(HLS_PROJECT_NAME)
-open_solution $env(HLS_SOLUTION_NAME)
+open_project $env(NHLS_PROJECT_NAME)
+open_solution $env(NHLS_SOLUTION_NAME)
 
 cosim_design -O \
-    -ldflags "$env(HLS_LDFLAGS)" \
+    -ldflags "$env(NHLS_LDFLAGS)" \
     -rtl verilog \
     -tool xsim \
-    -trace_level $env(HLS_COSIM_TRACE_LEVEL)
+    -trace_level $env(NHLS_COSIM_TRACE_LEVEL)
 exit

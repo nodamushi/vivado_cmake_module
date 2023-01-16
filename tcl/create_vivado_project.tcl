@@ -5,7 +5,7 @@
 #
 set project_name      [lindex $argv 0]
 set project_directory [lindex $argv 1]
-set board_name        [lindex $argv 2]
+set board_part        [lindex $argv 2]
 set full_path         [lindex $argv 3]
 set top_module_name   [lindex $argv 4]
 # source_directory: CMakeLists.txt directory
@@ -13,7 +13,7 @@ set source_directory  [lindex $argv 5]
 # repository top directory
 set root              [lindex $argv 6]
 
-# load user script
+# load user script (TCL0)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
   foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_0) {
     if { [file exists ${file}] } {
@@ -25,8 +25,19 @@ if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
   }
 }
 
+# if board part contains `*`, search board part.
+if { [string first "*" $board_part] != -1 } {
+  set find_board_part [get_board_parts -quiet -latest_file_version $board_part]
+  if { $find_board_part eq "" } {
+    puts "ERROR: `$board_part` board part is not found"
+    exit 1
+  }
+  puts "INFO: Board parts: `$board_part` -> `$find_board_part`"
+  set board_part $find_board_part
+}
+
 create_project -force $project_name $project_directory
-set_property board $board_name [current_project]
+set_property board $board_part [current_project]
 if { [info exists ::env(VIVADO_IP_DIRECTORIES)] } {
   set_property IP_REPO_PATHS $env(VIVADO_IP_DIRECTORIES) [current_fileset]
 }
@@ -46,7 +57,7 @@ if { [info exists ::env(VIVADO_CONSTRAINT_LIST)] } {
   }
 }
 
-# load user script
+# load user script (TCL1)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_1)] } {
   foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_1) {
     if { [file exists ${file}] } {
@@ -90,7 +101,7 @@ if { [info exists ::env(VIVADO_DFX_TCL)] } {
   }
 }
 
-# load user script
+# load user script (TCL2)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_2)] } {
   foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_2) {
     if { [file exists ${file}] } {
