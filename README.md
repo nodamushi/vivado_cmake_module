@@ -4,7 +4,10 @@ Fork from [nodamushi/vivado_init_project](https://github.com/nodamushi/vivado_in
 
 ## License
 
+This repository is in the public domain. Please choose whichever of the following licenses is more convenient for you.
+
 - Unlicense
+- CC0 [![CC0](https://i.creativecommons.org/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/deed.en)
 
 ## How to use
 
