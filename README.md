@@ -241,6 +241,8 @@ add_hls_project(
  [COSIM_LDFLAGS <flag string>]
  [COSIM_TRACE_LEVEL <none|all|port|port_hier>]
  [FLOW_TARGET <vivado|vitis>]
+ [CFLAG <flags>...]
+ [TB_CFLAG <flags>...]
 )
 ```
 
@@ -270,6 +272,9 @@ add_hls_project(
 - `COSIM_LDFLAGS` : cosim_design -ldflags
 - `COSIM_TRACE_LEVEL`: none, all, port, port_hier. (Default is `HLS_TRACE_LEVEL` variable)
 - `FLOW_TARGET`   : (vitis_hls only). vivado or vitis.(Default is `VITIS_HLS_FLOW_TARGET` variable)
+- `CFLAG      `   : Additional compile flag
+- `TB_CFLAG   `   : Additional test bench compile flag
+
 
 #### Define Targets
 
@@ -281,5 +286,39 @@ Note: `<project>` is the first argument of `add_hls_projct`.
 - `cosim_<project>         ` : C/RTL simulation
 - `lib_<project>           ` : Compile C++
 - `test_<project>          ` : Compile TestBench
+
+### Avoid "`__gmp_const` does not name a type"
+
+see: [Vitis HLS 2021.x - Use of gmp.h for Co-simulation](https://support.xilinx.com/s/article/Use-of-gmp-h-for-Co-simulation?language=en_US)
+
+By always including the following code at the beginning of the test code, this problem can be avoided.
+
+```c
+#include <_gmp_const.h>
+```
+
+`gmp_const.h` is [`gmp/gmp_const.h`](./gmp/gmp_const.h) or [`nogmp/gmp_const.h`](./nogmp/gmp_const.h).
+
+### Define header only HLS project
+
+```cmake
+ add_hls_interface(project
+   [INCDIRS <directory>...]
+   [DEPENDS <target>...]
+ )
+```
+
+#### Argument
+
+- `project`: interface library target name
+
+#### Options
+
+- `INCDIRS`: header directories.If this option is not specified, the current directory is set.
+- `DEPENDS`: depends targets
+
+#### Defined Target
+
+- `<project>`: interface library target
 
 

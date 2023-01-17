@@ -3,20 +3,25 @@
 open_project $env(NHLS_PROJECT_NAME)
 
 if { [info exists ::env(NHLS_SOURCES)] } {
-  set cflags ""
-  if { [info exists ::env(NHLS_CFLAGS)] } {
-    set cflags [string map {";" " "} $env(NHLS_CFLAGS)]
+  set tmp [string trim [string map {";" " "} $env(NHLS_SOURCES)]]
+  if { $tmp != "" } {
+    set cflags ""
+    if { [info exists ::env(NHLS_CFLAGS)] } {
+      set cflags [string map {";" " "} $env(NHLS_CFLAGS)]
+    }
+    add_files -cflags "$cflags" $tmp
   }
-
-  add_files -cflags "$env(NHLS_CFLAGS)" [string map {";" " "} $env(NHLS_SOURCES)]
 }
 
 if { [info exists ::env(NHLS_TB_SOURCES)] } {
-  set tbcflags ""
-  if { [info exists ::env(NHLS_TB_CFLAGS)] } {
-    set tbcflags [string map {";" " "} $env(NHLS_TB_CFLAGS)]
+  set tmp [string trim [string map {";" " "} $env(NHLS_TB_SOURCES)]]
+  if { $tmp != "" } {
+    set tbcflags ""
+    if { [info exists ::env(NHLS_TB_CFLAGS)] } {
+      set tbcflags [string map {";" " "} $env(NHLS_TB_CFLAGS)]
+    }
+    add_files -tb -cflags "$tbcflags" $tmp
   }
-  add_files -tb -cflags "$tbcflags" [string map {";" " "} $env(NHLS_TB_SOURCES)]
 }
 
 set_top $env(NHLS_TOP)

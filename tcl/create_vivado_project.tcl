@@ -15,7 +15,7 @@ set root              [lindex $argv 6]
 
 # load user script (TCL0)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_0)] } {
-  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_0) {
+  foreach file [split [string map {";" " "} $env(VIVADO_CREATE_PROJECT_SOURCE_0)] " "]  {
     if { [file exists ${file}] } {
       source ${file}
     } else {
@@ -39,27 +39,32 @@ if { [string first "*" $board_part] != -1 } {
 create_project -force $project_name $project_directory
 set_property board $board_part [current_project]
 if { [info exists ::env(VIVADO_IP_DIRECTORIES)] } {
-  set_property IP_REPO_PATHS $env(VIVADO_IP_DIRECTORIES) [current_fileset]
+  set tmp [string trim $env(VIVADO_RTL_LIST)]
+  if { $tmp != "" } {
+    set_property IP_REPO_PATHS $tmp [current_fileset]
+  }
 }
 update_ip_catalog
 
 # Add file
 if { [info exists ::env(VIVADO_RTL_LIST)] } {
-  foreach file $env(VIVADO_RTL_LIST) {
-    add_files $file
+  set tmp [string trim [string map {";" " "} $env(VIVADO_RTL_LIST)]]
+  if { $tmp != "" } {
+    add_files $tmp
   }
 }
 
 # Add constraint
 if { [info exists ::env(VIVADO_CONSTRAINT_LIST)] } {
-  foreach file $env(VIVADO_CONSTRAINT_LIST) {
-    add_files -fileset constrs_1 $file
+  set tmp [string trim [string map {";" " "} $env(VIVADO_CONSTRAINT_LIST)]]
+  if { $tmp != "" } {
+    add_files -fileset constrs_1 $tmp
   }
 }
 
 # load user script (TCL1)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_1)] } {
-  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_1) {
+  foreach file [split [string map {";" " "} $env(VIVADO_CREATE_PROJECT_SOURCE_1)] " "] {
     if { [file exists ${file}] } {
       source ${file}
     } else {
@@ -91,19 +96,22 @@ if { "$top_module_name" != "" } {
 
 # load dfx setting tcl file
 if { [info exists ::env(VIVADO_DFX_TCL)] } {
-  puts "INFO: Enable Dynamic Function eXchange"
-  if { [file exists $env(VIVADO_DFX_TCL)] } {
-    set_property PR_FLOW 1 [current_project]
-    source $env(VIVADO_DFX_TCL)
-  } else {
-    puts "ERROR!! Source file $env(VIVADO_DFX_TCL) is not found"
-    exit 1
+  set tmp [string trim [string map {";" " "} $env(VIVADO_DFX_TCL)]]
+  if { $tmp != "" } {
+    puts "INFO: Enable Dynamic Function eXchange"
+    if { [file exists $tmp] } {
+      set_property PR_FLOW 1 [current_project]
+      source $tmp
+    } else {
+      puts "ERROR!! Source file $env(VIVADO_DFX_TCL) is not found"
+      exit 1
+    }
   }
 }
 
 # load user script (TCL2)
 if { [info exists ::env(VIVADO_CREATE_PROJECT_SOURCE_2)] } {
-  foreach file $env(VIVADO_CREATE_PROJECT_SOURCE_2) {
+  foreach file [split [string map {";" " "} $env(VIVADO_CREATE_PROJECT_SOURCE_2)] " "]  {
     if { [file exists ${file}] } {
       source ${file}
     } else {

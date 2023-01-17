@@ -65,8 +65,15 @@ set(HLS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(HLS_TCL_DIR ${CMAKE_CURRENT_LIST_DIR}/tcl)
 set(HLS_CMAKE_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
+CHECK_INCLUDE_FILE(gmp.h HLS_GMP_EXISTS)
+if (HLS_GMP_EXISTS)
+  set(HLS_GMP_INC_DIR ${CMAKE_CURRENT_LIST_DIR}/gmp)
+else()
+  set(HLS_GMP_INC_DIR ${CMAKE_CURRENT_LIST_DIR}/nogmp)
+endif()
+
 # hide variables
-mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR HLS_PROJECT_FILE_NAME)
+mark_as_advanced(HLS_INCLUDE_DIR HLS_CMAKE_DIR HLS_TCL_DIR HLS_CMAKE_LIB_DIR HLS_PROJECT_FILE_NAME HLS_GMP_INC_DIR HLS_GMP_EXISTS)
 
 # find package
 include(FindPackageHandleStandardArgs)
@@ -113,6 +120,8 @@ get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
 #  [COSIM_LDFLAGS <flag string>]
 #  [COSIM_TRACE_LEVEL <none|all|port|port_hier>]
 #  [FLOW_TARGET <vivado|vitis>]
+#  [CFLAG <flags>...]
+#  [TB_CFLAG <flags>...]
 # )
 #
 # Define Targets:
@@ -321,8 +330,8 @@ function(add_hls_project project)
         list(APPEND HLS_ADD_PROJECT_TB_CFLAG -I${HLS_ADD_PROJECT_INCDIR})
       endif()
     endforeach()
-
   endforeach()
+  list(APPEND HLS_ADD_PROJECT_TB_CFLAG -I${HLS_GMP_INC_DIR})
 
   # define compile target
   add_library(lib_${project} STATIC ${HLS_ADD_PROJECT_SOURCES})
@@ -350,17 +359,10 @@ function(add_hls_project project)
     target_include_directories(test_${project}
       PUBLIC
         ${HLS_ADD_PROJECT_TB_INCDIRS}
+        ${HLS_GMP_INC_DIR}
     )
     set(HLS_ADD_PROJECT_CREATE_PROJECT_DEPENDS test_${project})
   endif()
-
-
-  # replace ";" -> " " for tcl scripts
-  # string(REPLACE ";" " " HLS_ADD_PROJECT_SOURCES_0 "${HLS_ADD_PROJECT_SOURCES_0}")
-  # string(REPLACE ";" " " HLS_ADD_PROJECT_TB_SOURCES_0 "${HLS_ADD_PROJECT_TB_SOURCES_0}")
-  # string(REPLACE ";" " " HLS_ADD_PROJECT_CFLAG "${HLS_ADD_PROJECT_CFLAG}")
-  # string(REPLACE ";" " " HLS_ADD_PROJECT_TB_CFLAG "${HLS_ADD_PROJECT_TB_CFLAG}")
-  # string(REPLACE ";" " " HLS_ADD_PROJECT_COSIM_LDFLAGS "${HLS_ADD_PROJECT_COSIM_LDFLAGS}")
 
   # define vitis hls project target
   set(HLS_ADD_PROJECT_PROJECT_NAME "${project}_hls_prj")

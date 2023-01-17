@@ -20,9 +20,12 @@ if { "$bd_file" == "" } {
 # report file
 set save_file 0
 if { [info exists ::env(REPORT_CSV)] } {
-  set save_file $env(REPORT_CSV)
-  if { [file pathtype $save_file] == "relative" } {
-    set save_file "$rep_save_dir/$save_file"
+  set tmp [string trim $env(REPORT_CSV)]
+  if { $tmp != "" } {
+    set save_file $tmp
+    if { [file pathtype $save_file] == "relative" } {
+      set save_file "$rep_save_dir/$save_file"
+    }
   }
 }
 

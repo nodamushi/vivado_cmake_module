@@ -10,7 +10,10 @@ open_project ${project_directory}/${project_name}.xpr
 
 set JOB_SIZE 1
 if { [info exists ::env(VIVADO_JOB_SIZE)] } {
-  set JOB_SIZE $env(VIVADO_JOB_SIZE)
+  set tmp [string trim $env(VIVADO_JOB_SIZE)]
+  if { $tmp != "" } {
+    set JOB_SIZE $tmp
+  }
 }
 
 proc runImpl {run jobsize} {
@@ -34,8 +37,11 @@ proc runImpl {run jobsize} {
 }
 
 set VIVADO_IMPLEMENTS ""
-if { [info exists ::env(VIVADO_VIVADO_IMPLEMENTS)] } {
-  set VIVADO_IMPLEMENTS $env(VIVADO_IMPLEMENTS)
+if { [info exists ::env(VIVADO_IMPLEMENTS)] } {
+  set tmp [string trim [string map {";" " "} $env(VIVADO_IMPLEMENTS)]]
+  if { $tmp != "" } {
+    set VIVADO_IMPLEMENTS $tmp
+  }
 }
 
 if { "$VIVADO_IMPLEMENTS" == "" } {
@@ -43,7 +49,7 @@ if { "$VIVADO_IMPLEMENTS" == "" } {
     runImpl $r $JOB_SIZE
   }
 } else {
-  foreach run $VIVADO_IMPLEMENTS {
+  foreach run [strip $VIVADO_IMPLEMENTS " "] {
     set r [get_runs run]
     runImpl $r $JOB_SIZE
   }

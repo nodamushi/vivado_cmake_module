@@ -10,21 +10,39 @@ if { "$target_name" == "" } {
   set target_name "<name>"
 }
 
+set url ""
+set port ""
+
 if { [info exists ::env(HWSVR)] } {
-  if { [info exists ::env(HWSVRPORT)] } {
-    puts "Connect $env(HWSVR)::$env(HWSVRPORT) hw_server"
-    connect -url $env(HWSVR) -port $env(HWSVRPORT)
+  set url [string trim $env(HWSVR)]
+  if { $url != "" } {
+    if { [info exists ::env(HWSVRPORT)] } {
+      set port [string trim $env(HWSVRPORT)]
+    }
+  }
+}
+
+if { $url != "" } {
+  if { $port != "" } {
+    puts "Connect $url::$port hw_server"
+    connect -url $url -port $port
   } else {
-    puts "Connect $env(HWSVR) hw_server"
-    connect -url $env(HWSVR)
+    puts "Connect $url hw_server"
+    connect -url $url
   }
 } else {
   puts "Connect local hw_server"
   connect
 }
 
+set jtag ""
+
 if { [info exists ::env(JTAG)] } {
-  target $env(JTAG)
+  set jtag [string trim $env(JTAG)]
+}
+
+if { $jtag != "" } {
+  target $jtag
   puts "Write Bitstream: ${bitstream}"
   fpga $bitstream
   puts "Done"
