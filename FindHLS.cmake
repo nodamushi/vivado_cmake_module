@@ -122,6 +122,9 @@ get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
 #  [FLOW_TARGET <vivado|vitis>]
 #  [CFLAG <flags>...]
 #  [TB_CFLAG <flags>...]
+#  [DEFINE <macro>...]
+#  [TB_DEFINE <macro>...]
+#  [NO_O0]
 # )
 #
 # Define Targets:
@@ -159,13 +162,16 @@ get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
 #  COSIM_LDFLAGS : cosim_design -ldflags
 #  COSIM_TRACE_LEVEL: none, all, port, port_hier
 #  FLOW_TARGET   : (vitis_hls only). vivado, vitis
+#  DEFINE        : define macro
+#  TB_DEFINE     : define macro for test bench
+#  NO_O0         : disable -O0 option of test_${project}
 #
 function(add_hls_project project)
   cmake_parse_arguments(
     HLS_ADD_PROJECT
-    ""
+    "NO_O0"
     "TOP;PERIOD;PART;SOLUTION;FLOW_TARGET;VERSION;DESCRIPTION;NAME;IPNAME;TAXONOMY;VENDOR;COSIM_TRACE_LEVEL"
-    "SOURCES;TB_SOURCES;INCDIRS;TB_INCDIRS;DEPENDS;LINK;TB_LINK;COSIM_LDFLAGS;CFLAG;TB_CFLAG"
+    "SOURCES;TB_SOURCES;INCDIRS;TB_INCDIRS;DEPENDS;LINK;TB_LINK;COSIM_LDFLAGS;CFLAG;TB_CFLAG;DEFINE;TB_DEFINE"
     ${ARGN}
   )
 
@@ -289,6 +295,10 @@ function(add_hls_project project)
     endforeach()
   endforeach()
 
+  foreach(HLS_ADD_PROJECT_DEF IN LISTS HLS_ADD_PROJECT_DEFINE)
+    list(APPEND HLS_ADD_PROJECT_CFLAG -D${HLS_ADD_PROJECT_DEF})
+  endforeach()
+
   if (NOT HLS_ADD_PROJECT_TB_CFLAG)
     set(HLS_ADD_PROJECT_TB_CFLAG ${HLS_ADD_PROJECT_CFLAG})
   else()
@@ -331,6 +341,10 @@ function(add_hls_project project)
       endif()
     endforeach()
   endforeach()
+  foreach(HLS_ADD_PROJECT_DEF IN LISTS HLS_ADD_PROJECT_TB_DEFINE)
+    list(APPEND HLS_ADD_PROJECT_TB_CFLAG -D${HLS_ADD_PROJECT_DEF})
+  endforeach()
+
   list(APPEND HLS_ADD_PROJECT_TB_CFLAG -I${HLS_GMP_INC_DIR})
 
   # define compile target
@@ -340,6 +354,9 @@ function(add_hls_project project)
       HLS::HLS
       ${HLS_ADD_PROJECT_LINK}
   )
+  if (HLS_ADD_PROJECT_DEFINE)
+    target_compile_definitions(lib_${project} PUBLIC ${HLS_ADD_PROJECT_DEFINE})
+  endif()
   target_include_directories(lib_${project}
     PUBLIC
       ${HLS_ADD_PROJECT_INCDIRS}
@@ -351,6 +368,15 @@ function(add_hls_project project)
     add_executable(test_${project}
         ${HLS_ADD_PROJECT_TB_SOURCES}
     )
+    target_compile_options(test_${project} PUBLIC -g)
+    if (NOT HLS_ADD_PROJECT_NO_O0)
+      target_compile_options(test_${project} PUBLIC -O0)
+    endif()
+
+    if (HLS_ADD_PROJECT_TB_DEFINE)
+      target_compile_definitions(test_${project} PUBLIC ${HLS_ADD_PROJECT_TB_DEFINE})
+    endif()
+
     target_link_libraries(test_${project}
       PUBLIC
         ${HLS_ADD_PROJECT_TB_LINK}

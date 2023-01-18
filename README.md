@@ -246,6 +246,9 @@ add_hls_project(
  [FLOW_TARGET <vivado|vitis>]
  [CFLAG <flags>...]
  [TB_CFLAG <flags>...]
+ [DEFINE <macro[=value]>...]
+ [TB_DEFINE <macro[=value]>...]
+ [NO_O0]
 )
 ```
 
@@ -277,7 +280,9 @@ add_hls_project(
 - `FLOW_TARGET`   : (vitis_hls only). vivado or vitis.(Default is `VITIS_HLS_FLOW_TARGET` variable)
 - `CFLAG      `   : Additional compile flag
 - `TB_CFLAG   `   : Additional test bench compile flag
-
+- `DEFINE     `   : Define macro
+- `TB_DEFINE  `   : Define macro for test bench
+- `NO_O0      `   : Disable -O0 option of `test_<project>` target.
 
 #### Define Targets
 
