@@ -101,6 +101,10 @@ endif()
 get_filename_component(HLS_VERSION "${HLS_BIN_DIR}" DIRECTORY)
 get_filename_component(HLS_VERSION "${HLS_VERSION}" NAME)
 
+# vivado
+file(TO_CMAKE_PATH ${HLS_BIN_DIR}/../../../Vivado/${HLS_VERSION}/bin/vivado HLS_VIVADO_EXE)
+mark_as_advanced(HLS_VIVADO_EXE)
+
 # add_hls_project(
 #  <project>
 #  TOP      <top module>
@@ -483,6 +487,14 @@ function(add_hls_project project)
     DEPENDS create_project_${project}
     COMMAND ${HLS_EXEC} -p ${HLS_ADD_PROJECT_DIR}&
   )
+
+  # open wave file
+  set(HLS_ADD_PROJECT_WAVE_DATABASE ${HLS_ADD_PROJECT_DIR}/${HLS_ADD_PROJECT_SOLUTION}/sim/verilog/${HLS_ADD_PROJECT_TOP}.wdb)
+  if (EXISTS ${HLS_VIVADO_EXE})
+    add_custom_target(wave_${project}
+      COMMAND ${HLS_VIVADO_EXE} ${HLS_ADD_PROJECT_WAVE_DATABASE}&
+    )
+  endif()
 
 endfunction()
 

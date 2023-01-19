@@ -276,7 +276,7 @@ add_hls_project(
 - `LINK       `   : Link library
 - `TB_LINK    ` : Link library for testing
 - `COSIM_LDFLAGS` : cosim_design -ldflags
-- `COSIM_TRACE_LEVEL`: none, all, port, port_hier. (Default is `HLS_TRACE_LEVEL` variable)
+- `COSIM_TRACE_LEVEL`: default none, all, port, port_hier. (Default is `HLS_TRACE_LEVEL` variable)
 - `FLOW_TARGET`   : (vitis_hls only). vivado or vitis.(Default is `VITIS_HLS_FLOW_TARGET` variable)
 - `CFLAG      `   : Additional compile flag
 - `TB_CFLAG   `   : Additional test bench compile flag
@@ -291,9 +291,12 @@ Note: `<project>` is the first argument of `add_hls_projct`.
 - `create_project_<project>` : Create Vitis Project
 - `clear_<project>         ` : Delete Vitis project directory
 - `csynth_<project>        ` : Run synthesis
-- `cosim_<project>         ` : C/RTL simulation
 - `lib_<project>           ` : Compile C++
 - `test_<project>          ` : Compile TestBench
+- `wave_<project>          ` : Open cosim wave database in Vivado
+- `cosim_<project>         ` : C/RTL simulation
+    - `TLEVEL`: trace level. `make TLEVEL=all cosim_<project>`
+    - `ARGV`  : arguments. `make ARGV="-foo -bar" cosim_<project>`
 
 ### Avoid "`__gmp_const` does not name a type"
 
