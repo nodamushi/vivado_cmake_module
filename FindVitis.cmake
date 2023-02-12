@@ -318,9 +318,7 @@ function(add_vitis_hw_project project)
   )
 
   # build project
-  add_custom_target(${project} SOURCES ${BITSTREAM})
-  add_custom_command(
-    OUTPUT ${BITSTREAM}
+  add_custom_target(${project}
     DEPENDS create_${project}
     COMMAND ${VITIS_XSCT} ${VITIS_TCL_DIR}/vitis_build.tcl ${ENV_FILE}
   )
