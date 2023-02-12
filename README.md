@@ -18,6 +18,9 @@ see [nodamushi/vivado_init_project](https://github.com/nodamushi/vivado_init_pro
 
 
 ```cmake
+# set vivado version
+set(VIVADO_REQUIRED_VERSION 2021.1)
+
 # ------ Download -----------------------
 include(FetchContent)
 FetchContent_Declare(
