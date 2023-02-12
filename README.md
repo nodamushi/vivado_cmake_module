@@ -420,7 +420,7 @@ add_vitis_hw_project(
   sample_vitis            # project name
   C                       # C language. (Default is C++)
   XSA     sample_vivado   # source vivado project
-  PROC    ps7_cortexa9_0  # processor name in design
+  PROC    ps7_cortexa9_0  # processor name
   SOURCES src             # source directory
 )
 ```
@@ -431,6 +431,7 @@ add_vitis_hw_project(
 - `${projecte}      ` : Build project
 - `clear_${project} ` : Delete workspace
 - `open_${project}  ` : Open workspace in Vitis
+- `show_proc_${project}` : Show processor list
 
 ⚠️ If `create_${project}` fails, run `clear_${project}` before trying again.
 

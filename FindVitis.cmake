@@ -237,6 +237,7 @@ function(add_vitis_hw_project project)
     get_property(xsa_file TARGET ${VARG_XSA} PROPERTY XSA)
     set(platform_name ${VARG_XSA})
     list(APPEND DEPENDS xsa_${VARG_XSA})
+    set(XSA_DEPEND xsa_${VARG_XSA})
   else()
     # may be xsa file
     set(xsa_file ${VARG_XSA})
@@ -244,6 +245,8 @@ function(add_vitis_hw_project project)
     if(NOT EXISTS ${VARG_XSA})
       message(WARNING "${VARG_XSA} not found.")
     endif()
+    list(APPEND DEPENDS ${xsa_file})
+    set(XSA_DEPEND ${xsa_file})
   endif()
 
   # set domain
@@ -320,6 +323,12 @@ function(add_vitis_hw_project project)
     OUTPUT ${BITSTREAM}
     DEPENDS create_${project}
     COMMAND ${VITIS_XSCT} ${VITIS_TCL_DIR}/vitis_build.tcl ${ENV_FILE}
+  )
+
+  # show processor
+  add_custom_target(show_proc_${project}
+    DEPENDS ${XSA_DEPEND}
+    COMMAND ${VITIS_XSCT} ${VITIS_TCL_DIR}/vitis_show_proc.tcl ${ENV_FILE}
   )
 
   # open project
