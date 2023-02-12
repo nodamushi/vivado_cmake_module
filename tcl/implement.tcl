@@ -3,27 +3,23 @@
 #
 #  target: vivado
 #
-set project_name      [lindex $argv 0]
-set project_directory [lindex $argv 1]
+set env_file      [lindex $argv 0]
+set jobsize       [lindex $argv 1]
+puts "INFO: set environments for tcl script, $env_file"
+source $env_file
 
+puts "INFO: open_project ${project_directory}/${project_name}.xpr"
 open_project ${project_directory}/${project_name}.xpr
 
-set JOB_SIZE 1
-if { [info exists ::env(VIVADO_JOB_SIZE)] } {
-  set tmp [string trim $env(VIVADO_JOB_SIZE)]
-  if { $tmp != "" } {
-    set JOB_SIZE $tmp
-  }
-}
 
-proc runImpl {run jobsize} {
+proc runImpl {run j} {
   set name [get_property NAME $run]
   set isImpl [get_property IS_IMPLEMENTATION  $run]
   set isIncArchive [get_property INCLUDE_IN_ARCHIVE $run]
   set stat [get_property STATUS $run]
   if { $isImpl == 1 && $isIncArchive == 1 && $stat != "write_bitstream Complete!" } {
       puts "INFO: Run $name"
-      launch_runs $run -jobs $jobsize -to_step write_bitstream
+      launch_runs $run -jobs $j -to_step write_bitstream
       wait_on_run $run
       set stat [get_property STATUS $run]
       if {$stat != "write_bitstream Complete!"} {
@@ -36,22 +32,15 @@ proc runImpl {run jobsize} {
   }
 }
 
-set VIVADO_IMPLEMENTS ""
-if { [info exists ::env(VIVADO_IMPLEMENTS)] } {
-  set tmp [string trim [string map {";" " "} $env(VIVADO_IMPLEMENTS)]]
-  if { $tmp != "" } {
-    set VIVADO_IMPLEMENTS $tmp
-  }
-}
 
-if { "$VIVADO_IMPLEMENTS" == "" } {
+if { "$impls" == "" } {
   foreach r [get_runs] {
-    runImpl $r $JOB_SIZE
+    runImpl $r $jobsize
   }
 } else {
-  foreach run [strip $VIVADO_IMPLEMENTS " "] {
-    set r [get_runs run]
-    runImpl $r $JOB_SIZE
+  foreach run $impls {
+    set r [get_runs $run]
+    runImpl $r $jobsize
   }
 }
 

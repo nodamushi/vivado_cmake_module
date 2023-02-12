@@ -23,7 +23,7 @@ include(FetchContent)
 FetchContent_Declare(
   vivado_cmake_module
   GIT_REPOSITORY  https://github.com/nodamushi/vivado_cmake_module.git
-  GIT_TAG v0.0.3
+  GIT_TAG v0.0.6
 )
 FetchContent_MakeAvailable(vivado_cmake_module)
 list(APPEND CMAKE_MODULE_PATH ${vivado_cmake_module_SOURCE_DIR})
@@ -31,6 +31,7 @@ list(APPEND CMAKE_MODULE_PATH ${vivado_cmake_module_SOURCE_DIR})
 # -------- find package ------------------
 find_package(Vivado)
 find_package(HLS)
+find_package(Vitis)
 
 # ---- define Vivado project ------------
 add_vivado_project(my_vivado_prj
@@ -38,8 +39,8 @@ add_vivado_project(my_vivado_prj
   BOARD      target_board
   RTL        top_module.v sub_module.v
   CONSTRAINT cons.xdc
-  DESIGN     design_1.tcl)
-
+  DESIGN     design_1.tcl
+)
 
 # -- define vitis/vivado HLS project ---
 add_hls_project(my_led
@@ -52,6 +53,15 @@ add_hls_project(my_led
   SOURCES hlsled.cpp
   # Test bench
   TB_SOURCES tb.cpp
+)
+
+# --- define vitis application project ---
+add_vitis_hw_project(
+  my_vitis_prj
+  C # Not C++
+  XSA     my_vivado_prj
+  PROC    ps7_cortexa9_0
+  SOURCES src
 )
 ```
 
@@ -248,7 +258,33 @@ add_hls_project(
  [TB_CFLAG <flags>...]
  [DEFINE <macro[=value]>...]
  [TB_DEFINE <macro[=value]>...]
+ [CTEST]
  [NO_O0]
+)
+```
+
+**sample code**
+
+```cmake
+add_hls_project(
+  hlsled                   # project name
+
+  # Project info
+  TOP     HlsLED           # top module function name
+  VERSION 1.0              # IP version
+  VENDOR  "foobar"         # vendor name
+  NAME    "HLS LED Chika"  # display name
+  PERIOD  10               # clock period[ns] (10 = 100MHz)
+  PART    xc7z007sclg400-1 # fpga part
+
+  # source
+  SOURCES hlsled.cpp       # source file list
+  LINK    my_hls_lib       # add library. see `add_hls_interface`
+
+  # test
+  TB_SOURCES tb.cpp        # test bench file list
+  TB_LINK my_test_lib      # add library. see `add_hls_interface`
+  CTEST                    # add_test(NAME test_hlsled COMMAND $<TARGET_FILE:build_test_hlsled>)
 )
 ```
 
@@ -283,6 +319,7 @@ add_hls_project(
 - `DEFINE     `   : Define macro
 - `TB_DEFINE  `   : Define macro for test bench
 - `NO_O0      `   : Disable -O0 option of `test_<project>` target.
+- `CTEST      `   : call `add_test`.
 
 #### Define Targets
 
@@ -313,9 +350,10 @@ By always including the following code at the beginning of the test code, this p
 ### Define header only HLS project
 
 ```cmake
- add_hls_interface(project
-   [INCDIRS <directory>...]
-   [DEPENDS <target>...]
+ add_hls_interface(
+  project
+  [INCDIRS <directory>...]
+  [DEPENDS <target>...]
  )
 ```
 
@@ -333,3 +371,86 @@ By always including the following code at the beginning of the test code, this p
 - `<project>`: interface library target
 
 
+## Vitis
+
+```cmake
+find_package(Vitis)
+```
+
+### Define Vitis hw application
+
+```cmake
+add_vitis_hw_project(
+  <project>
+  XSA  <vivado project|xsa file>
+  PROC <proecessor name>
+  [C|CPP]
+  [OS  <os name>]
+  [DIR <workspace directory>]
+  [DOMAIN_NAME <domain short name>]
+  [DOMAIN_LONG <domain long name>]
+  [TEMPLATE    <project tempalte name>]
+  [SOURCES     <source file|directory>...]
+  [DEPENDS     <denpend target>...]
+  [INCDIR      <include directory>...]
+  [DEFINE      <macro>...]
+  [TCL0        <user tcl script>...]
+  [TCL1        <user tcl script>...]
+  [TCL2        <user tcl script>...]
+  [TCL3        <user tcl script>...]
+  [ARCH        microblaze|aarch64|aarch32|armr5]
+)
+```
+
+**sample code:**
+
+```cmake
+# * source vivado project *
+add_vivado_project(
+  sample_vivado
+  DESIGN  top.tcl
+  TOP     top_wrapper
+  BOARD   <your target board>
+)
+
+##########################
+## Sample Vitis project ##
+##########################
+add_vitis_hw_project(
+  sample_vitis            # project name
+  C                       # C language. (Default is C++)
+  XSA     sample_vivado   # source vivado project
+  PROC    ps7_cortexa9_0  # processor name in design
+  SOURCES src             # source directory
+)
+```
+
+### Targets:
+
+- `create_${project}` : Generate workspace / platform / application
+- `${projecte}      ` : Build project
+- `clear_${project} ` : Delete workspace
+- `open_${project}  ` : Open workspace in Vitis
+
+⚠️ If `create_${project}` fails, run `clear_${project}` before trying again.
+
+### Arguments:
+
+- `<project>` : project name
+- `PROC     ` : processor name
+- `XSA      ` : vivado project or xsa file path
+
+### Options:
+
+- `C|CPP      ` : Supported language. C => C language, CPP => C++ language. If this option is not defined, `VITIS_DEFAULT_LANG` will be used.
+- `OS         ` : project os. default is standalone.
+- `DIR        ` : workspace directory
+- `DOMAIN_NAME` : domain name.
+- `DOMAIN_LONG` : domain display name.
+- `TEMPLATE   ` : application project template name. If this option is not defined, `VITIS_XXX_TEMPLATE` will be used.
+- `SOURCES    ` : source files or directories
+- `DEPENDS    ` : depends
+- `INCDIR     ` : include directories.
+- `DEFINE     ` : macro
+- `TCL0,1,2,3 ` : user tcl scripts. see `tcl/create_vitis_project.tcl`
+- `ARCH       ` : microblaze or aarch64 or aarch32 or armr5

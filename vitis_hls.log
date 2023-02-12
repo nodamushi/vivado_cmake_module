@@ -1,0 +1,40 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2021.1 (64-bit)
+  **** SW Build 3247384 on Thu Jun 10 19:36:07 MDT 2021
+  **** IP Build 3246043 on Fri Jun 11 00:30:35 MDT 2021
+    ** Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
+
+source /tools/Xilinx/Vitis_HLS/2021.1/scripts/vitis_hls/hls.tcl -notrace
+INFO: Applying HLS Y2K22 patch v1.2 for IP revision
+[1mSYNTAX [0m
+  [1mvitis_hls[0m <[1mtclscripts[0m> [OPTIONS]
+
+[1mDESCRIPTION[0m
+  Vitis HLS command line
+
+[1mOPTIONS[0m
+  [1mtclscripts[0m :  <string> 
+    TCL file
+  [1m-eval[0m <string> 
+    Run TCL commands
+  [1m-f[0m[=false|[4mtrue[0m]
+    start in shell mode
+  [1m-i[0m[=false|[4mtrue[0m]
+    start in interactive mode
+  [1m-l[0m <string:[4mvitis_hls.log[0m> 
+    log file
+  [1m-n[0m[=false|[4mtrue[0m]
+    do not show splash screen
+  [1m-nosplash[0m[=false|[4mtrue[0m]
+    do not show splash screen
+  [1m-p[0m <string> 
+    project name
+  [1m-terse[0m[=false|[4mtrue[0m]
+    Filter stdout to only show status INFO and WARNING messages, log file will contain all messages
+  [1m-version[0m[=false|[4mtrue[0m]
+    show product version
+
+[1mSEE ALSO[0m
+  www.xilinx.com/cgi-bin/docs/rdoc?v=2021.1;t=vitis+doc;d=wic1584802485878.html
+
+INFO: [Common 17-206] Exiting vitis_hls at Tue Jan 31 03:43:17 2023...

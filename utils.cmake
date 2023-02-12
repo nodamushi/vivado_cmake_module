@@ -1,0 +1,125 @@
+if (${CMAKE_VERSION} VERSION_GREATER "3.20.0")
+
+  macro(vcmu_to_abs_path SRC DSTVAR)
+    if (IS_ABSOLUTE ${SRC})
+      file(TO_CMAKE_PATH ${SRC} ${DSTVAR})
+    else()
+      cmake_path(SET ${DSTVAR} NORMALIZE "${CMAKE_CURRENT_SOURCE_DIR}/${SRC}")
+    endif()
+  endmacro()
+
+else()
+
+  macro(vcmu_to_abs_path SRC DSTVAR)
+    if (IS_ABSOLUTE ${SRC})
+      file(TO_CMAKE_PATH ${SRC} ${DSTVAR})
+    else()
+      file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SRC}" ${DSTVAR})
+    endif()
+  endmacro()
+
+endif()
+
+macro(vcmu_to_abs_native_path SRC DSTVAR)
+  vcmu_to_abs_path(${SRC} ${DSTVAR})
+  file(TO_NATIVE_PATH "${${DSTVAR}}" ${DSTVAR})
+endmacro()
+
+macro(vcmu_map_abs_path SRCLIST DSTLIST)
+  if ("${ARGN}" STREQUAL "")
+    set(VCM_MAP_ABS_PATH_PREFIX "")
+  else()
+    list(GET ARGN 0 VCM_MAP_ABS_PATH_PREFIX)
+  endif()
+  foreach(VCMU_MAP_ABS_PATH_TMP IN LISTS ${SRCLIST})
+    vcmu_to_abs_path(${VCMU_MAP_ABS_PATH_TMP} VCMU_MAP_ABS_PATH_TMP)
+    list(APPEND ${DSTLIST} "${VCM_MAP_ABS_PATH_PREFIX}${VCMU_MAP_ABS_PATH_TMP}")
+  endforeach()
+endmacro()
+
+macro(vcmu_map_abs_native_path SRCLIST DSTLIST)
+  if ("${ARGN}" STREQUAL "")
+    set(VCM_MAP_ABS_PATH_PREFIX "")
+  else()
+    list(GET ARGN 0 VCM_MAP_ABS_PATH_PREFIX)
+  endif()
+
+
+  foreach(VCMU_MAP_ABS_PATH_TMP IN LISTS ${SRCLIST})
+    vcmu_to_abs_native_path(${VCMU_MAP_ABS_PATH_TMP} VCMU_MAP_ABS_PATH_TMP)
+    list(APPEND ${DSTLIST} "${VCM_MAP_ABS_PATH_PREFIX}${VCMU_MAP_ABS_PATH_TMP}")
+  endforeach()
+endmacro()
+
+function(vcmu_env_file_init FNAME)
+  file(WRITE ${FNAME} "# define variable for tcl script. source me\n")
+endfunction()
+
+macro(vcmu_env_file_add_list FNAME VARNAME SRCLIST)
+  list(LENGTH ${SRCLIST} VCMU_ENV_FILE_ADD_LIST_TMP)
+  if ( ${VCMU_ENV_FILE_ADD_LIST_TMP} EQUAL 0 )
+    file(APPEND ${FNAME} "set ${VARNAME} \"\"\n")
+  else()
+    file(APPEND ${FNAME} "set ${VARNAME} {")
+    foreach(VCMU_ENV_FILE_ADD_LIST_TMP IN LISTS ${SRCLIST})
+      file(APPEND ${FNAME} " ${VCMU_ENV_FILE_ADD_LIST_TMP}")
+    endforeach()
+    file(APPEND ${FNAME} " }\n")
+  endif()
+endmacro()
+
+function(vcmu_env_file_add_var FNAME VARNAME SRC)
+  if ( "${SRC}" STREQUAL "" )
+    file(APPEND ${FNAME} "set ${VARNAME} \"\"\n")
+  else()
+    file(APPEND ${FNAME} "set ${VARNAME} ${SRC}\n")
+  endif()
+endfunction()
+
+
+macro(vcmu_find_vivado_bin VAR REQ_VAR1 REQ_VAR2)
+
+  # find vivado path
+  find_path(${VAR}
+    vivado
+    PATHS ${VIVADO_ROOT} ENV XILINX_VIVADO
+    PATH_SUFFIXES bin
+  )
+
+  if (${${VAR}} STREQUAL "${VAR}-NOTFOUND")
+    if (${REQ_VAR1})
+      if (UNIX)
+        if (EXISTS /opt/Xilinx/Vivado/${${REQ_VAR1}}/bin/vivado)
+          set(${VAR} /opt/Xilinx/Vivado/${${REQ_VAR1}}/bin)
+        elseif (EXISTS /tools/Xilinx/Vivado/${${REQ_VAR1}}/bin/vivado)
+          set(${VAR} /tools/Xilinx/Vivado/${${REQ_VAR1}}/bin)
+        endif()
+      elseif(WIN32)
+        if (EXISTS C:/Xilinx/Vivado/${${REQ_VAR1}}/bin/vivado.bat)
+          set(${VAR} C:/Xilinx/Vivado/${${REQ_VAR1}}/bin)
+        endif()
+      endif()
+    elseif (${REQ_VAR2})
+        if (UNIX)
+          if (EXISTS /opt/Xilinx/Vivado/${${REQ_VAR2}}/bin/vivado)
+            set(${VAR} /opt/Xilinx/Vivado/${${REQ_VAR2}}/bin)
+          elseif (EXISTS /tools/Xilinx/Vivado/${${REQ_VAR2}}/bin/vivado)
+            set(${VAR} /tools/Xilinx/Vivado/${${REQ_VAR2}}/bin)
+          endif()
+        elseif(WIN32)
+          if (EXISTS C:/Xilinx/Vivado/${${REQ_VAR2}}/bin/vivado.bat)
+            set(${VAR} C:/Xilinx/Vivado/${${REQ_VAR2}}/bin)
+          endif()
+        endif()
+    endif()
+  endif()
+
+endmacro()
+
+set(VCMU_TCL_DIR ${CMAKE_CURRENT_LIST_DIR}/tcl)
+
+macro(vcmu_create_tcl_script type load)
+  set(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/${type}_${project}_${load})
+  file(WRITE ${SCRIPT} "source ${ENV_FILE};\n")
+  file(APPEND ${SCRIPT} "source ${VCMU_TCL_DIR}/${load};\n")
+endmacro()

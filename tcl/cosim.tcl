@@ -3,29 +3,16 @@
 #
 #  target: vitis_hls/vivado_hls
 #
-open_project $env(NHLS_PROJECT_NAME)
-open_solution $env(NHLS_SOLUTION_NAME)
+open_project $project_name
+open_solution $solution
 
-set ldflags ""
-if { [info exists ::env(NHLS_COSIM_LDFLAGS)] } {
-  set ldflags [string map {";" " "} "$env(NHLS_COSIM_LDFLAGS)"]
-}
-
-set tlevel "none"
 # default setting
-if { [info exists ::env(NHLS_COSIM_TRACE_LEVEL)] } {
-  set tmp [string trim $env(NHLS_COSIM_TRACE_LEVEL)]
-  if { $tmp != "" } {
-    set tlevel $tmp
-  }
-}
-
 # user environment variable
 # make TLEVEL=all cosim_foobar
 if { [info exists ::env(TLEVEL)] } {
   set tmp [string trim $env(TLEVEL)]
   if { $tmp != "" } {
-    set tlevel $tmp
+    set trace_level $tmp
   }
 }
 
@@ -39,9 +26,9 @@ if { [info exists ::env(ARGV)] } {
 }
 
 cosim_design -O \
-    -ldflags "$ldflags" \
+    -ldflags $cosim_ldflags \
     -rtl verilog \
     -tool xsim \
-    -trace_level $tlevel \
+    -trace_level $trace_level \
     -argv "$argv"
 exit

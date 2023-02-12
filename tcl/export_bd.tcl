@@ -3,24 +3,28 @@
 #
 #  target: vivado
 #
-set project_name      [lindex $argv 0]
-set project_directory [lindex $argv 1]
-set tcl_directory     [lindex $argv 2]
-set output_tcl_file   [lindex $argv 3]
-set design_name       [lindex $argv 4]
+set env_file      [lindex $argv 0]
+puts "INFO: \[TCL\] set environments for tcl script, $env_file"
+source $env_file
 
 source $tcl_directory/_source_find_bd.tcl
 
-
 puts "${project_directory}/${project_name}.xpr"
-puts [pwd]
-
 open_project ${project_directory}/${project_name}.xpr
-set bd_file [getBdFile "${project_directory}/${project_name}.srcs/sources_1/bd" $design_name]
-if { "$bd_file" == "" } {
-  exit 1
+
+foreach fpath $designs {
+  set fname [file tail $fpath]
+  set design_bd_name [file rootname $fname]
+  set bdpath ${project_directory}/${project_name}.srcs/sources_1/bd
+
+  set bd_file [getBdFile $bdpath $design_bd_name]
+  if { "$bd_file" == "" } {
+    puts "ERROR: $design_bd_name not found."
+  } else {
+    puts "INFO: Save $design_bd_name => $fpath"
+    open_bd_design $bd_file
+    write_bd_tcl -force $fpath
+  }
 }
 
-open_bd_design $bd_file
-write_bd_tcl -force $output_tcl_file
 close_project
