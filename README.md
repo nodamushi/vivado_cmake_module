@@ -26,7 +26,7 @@ include(FetchContent)
 FetchContent_Declare(
   vivado_cmake_module
   GIT_REPOSITORY  https://github.com/nodamushi/vivado_cmake_module.git
-  GIT_TAG v0.0.7
+  GIT_TAG v0.0.8
 )
 FetchContent_MakeAvailable(vivado_cmake_module)
 list(APPEND CMAKE_MODULE_PATH ${vivado_cmake_module_SOURCE_DIR})

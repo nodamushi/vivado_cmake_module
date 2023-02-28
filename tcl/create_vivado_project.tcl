@@ -76,9 +76,9 @@ foreach design $designs {
       source $design
       regenerate_bd_layout
       save_bd_design
-      set design_bd_name [get_bd_designs]
+      set design_bd_name [current_bd_design]
       set bd_files [get_files $design_bd_name.bd]
-      generate_target all $bd_files
+      generate_target all $bd_files -quiet
       if { "$top_module_name" == "${design_bd_name}_wrapper" } {
         make_wrapper -files $bd_files -top -import
       }
@@ -96,7 +96,9 @@ foreach design $designs {
 }
 
 if { "$top_module_name" != "" } {
+  puts "========================================================"
   puts "INFO: \[Create TCL\] set_property top ${top_module_name}"
+  puts "========================================================"
   set_property top ${top_module_name} [current_fileset]
 }
 
