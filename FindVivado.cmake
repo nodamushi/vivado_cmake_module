@@ -106,6 +106,8 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 #    [TCL2   <tcl file>...]
 #    [DFX    <tcl file>]
 #    [BOARD_REPO <directory>...]
+#    [IMPLEMENTS <implimentation name>...]
+#    [BETA   <beta device pattern>]
 # )
 #
 # Define Targets:
@@ -159,13 +161,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 #  TCL2       : Tcl script file. This file will be loaded before closeing project in `create_vivado_project.tcl`.
 #  IMPLEMENTS : impelmentation name list
 #  BOARD_REPO : set_param board.repoPaths
+#  BETA       : enable_beta_device command arguments.
 #
 function(add_vivado_project project)
   cmake_parse_arguments(
     VARG
     ""
     "BOARD;DIR;TOP;DFX;WD"
-    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL0;TCL1;TCL2;BOARD_REPO;DESIGN;"
+    "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL0;TCL1;TCL2;BOARD_REPO;DESIGN;BETA;"
     ${ARGN}
   )
 
@@ -238,6 +241,7 @@ function(add_vivado_project project)
   vcmu_env_file_add_var(${ENV_FILE} tcl_directory "${VIVADO_TCL_DIR}")
   vcmu_env_file_add_var(${ENV_FILE} root "${VIVADO_PROJECT_REPOGITORY_ROOT_DIR}")
   vcmu_env_file_add_list(${ENV_FILE} impls VARG_IMPLEMENTS)
+  vcmu_env_file_add_var(${ENV_FILE} use_beta_device "${VARG_BETA}")
 
   # define ${project} target(create Vivado project)
   add_custom_target(${project} SOURCES ${PRJFILE})

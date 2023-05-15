@@ -126,6 +126,8 @@ add_vivado_project(
    [TCL2   <tcl file>...]
    [DFX    <tcl file>]
    [IMPLEMENTS <implimentation name>...]
+   [BOARD_REPO <directory>...]
+   [BETA   <beta device pattern>]
 )
 ```
 
@@ -151,7 +153,8 @@ add_vivado_project(
 - `TCL2      ` : Tcl script files. This file will be loaded before closeing project in `create_vivado_project.tcl`.
 - `DFX       ` : Enable Dynamic Function eXchange(Partial Reconfigu), and load setting tcl file.
 - `IMPLEMENTS` : impelmentation name list
-
+- `BOARD_REPO` : set_param board.repoPaths
+- `BETA      ` : enable_beta_device command arguments. `*` is all beta device enable.
 
 #### Define Targets
 

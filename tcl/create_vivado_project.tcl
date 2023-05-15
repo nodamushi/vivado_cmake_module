@@ -7,7 +7,12 @@ set env_file      [lindex $argv 0]
 puts "INFO: \[Create TCL\] set environments for tcl script, $env_file"
 source $env_file
 
-if { "boardRepos" != "" } {
+if { "$use_beta_device" != "" } {
+  puts "INFO: \[Create TCL\] Enable beta device. $use_beta_device"
+  enable_beta_device $use_beta_device
+}
+
+if { "$boardRepos" != "" } {
   puts "INFO: \[Create TCL\] Set board.repoPaths $boardRepos"
   set_param board.repoPaths $boardRepos
 }
