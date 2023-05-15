@@ -31,6 +31,9 @@ domain create \
   -proc ${proc} \
   -runtime {cpp}
 
+platform active ${platform}
+platform generate
+
 ####################
 # TCL1 user script
 ####################
@@ -38,6 +41,18 @@ foreach f $tcl1 {
   puts "Source TCL1 $f"
   source $f
 }
+
+#####################
+# Save processor path
+#####################
+set pcell [hsi::get_cells -filter {IP_TYPE==PROCESSOR} ${proc}]
+set paddrtag  [common::get_property ADDRESS_TAG  $pcell]
+set ppath [lindex [split $paddrtag ":"] 0]
+
+set file [open $proc_file "w"]
+puts -nonewline $file $ppath
+close $file
+
 
 ###################
 # project
@@ -53,25 +68,28 @@ foreach f $src {
   importsources -name $project -path $f -soft-link
 }
 
-foreach d $incdir {
-  app config -name $project -add include-path $d
+foreach config {Release Debug} {
+
+  app config -name $project -set build-config $config
+
+  foreach d $incdir {
+    app config -name $project -add include-path $d
+  }
+
+  foreach d $defs {
+    app config -name $project -add define-compiler-symbols $d
+  }
+
+  ####################
+  # TCL2 user script
+  ####################
+  foreach f $tcl2 {
+    puts "Source TCL2 $f"
+    source $f
+  }
 }
 
-foreach d $defs {
-  app config -name $project -add define-compiler-symbols $d
-}
-
-####################
-# TCL2 user script
-####################
-foreach f $tcl2 {
-  puts "Source TCL2 $f"
-  source $f
-}
-
-
-platform active ${platform}
-platform generate
+app config -name $project -set build-config $build_mode
 
 ####################
 # TCL3 user script

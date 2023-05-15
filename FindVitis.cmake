@@ -74,6 +74,13 @@ endif()
 set(VITIS_VIVADO_EXE ${VITIS_VIVADO_BIN_DIR}/vivado)
 set(VITIS_XSCT ${VITIS_BIN_DIR}/xsct)
 set(VITIS_EXE ${VITIS_BIN_DIR}/vitis)
+set(VITIS_UPDATEMEM ${VITIS_BIN_DIR}/updatemem)
+
+if (WIN32)
+  set(VITIS_RUN_UPDATEMEM ${CMAKE_CURRENT_LIST_DIR}/os/win/updatemem.bat)
+else ()
+  set(VITIS_RUN_UPDATEMEM ${CMAKE_CURRENT_LIST_DIR}/os/linux/updatemem.sh)
+endif()
 
 
 # save current directory
@@ -109,6 +116,7 @@ _find_vitis_append_incdir(VITIS_MICROBLAZE_INCDIRS ${MICROBLAZE_INCROOT}/x86_64-
 #   XSA  <vivado project|xsa file>
 #   PROC <proecessor name>
 #   [C|CPP]
+#   [RELEASE|DEBUG]
 #   [OS  <os name>]
 #   [DIR <workspace directory>]
 #   [DOMAIN_NAME <domain short name>]
@@ -123,6 +131,7 @@ _find_vitis_append_incdir(VITIS_MICROBLAZE_INCDIRS ${MICROBLAZE_INCROOT}/x86_64-
 #   [TCL2        <user tcl script>...]
 #   [TCL3        <user tcl script>...]
 #   [ARCH        microblaze|aarch64|aarch32|armr5]
+#   [BIT <bitstream file>]
 # )
 #
 # define single platform/application project.
@@ -135,6 +144,7 @@ _find_vitis_append_incdir(VITIS_MICROBLAZE_INCDIRS ${MICROBLAZE_INCROOT}/x86_64-
 # Options:
 #  C|CPP       : Supported language. C => C language, CPP => C++ language
 #              : If this option is not defined, `VITIS_DEFAULT_LANG` will be used.
+# RELEASE|DEBUG: default build mode. default is release.
 #  OS          : project os. default is standalone.
 #  DIR         : workspace directory
 #  DOMAIN_NAME : domain name.
@@ -147,18 +157,20 @@ _find_vitis_append_incdir(VITIS_MICROBLAZE_INCDIRS ${MICROBLAZE_INCROOT}/x86_64-
 #  DEFINE      : macro
 #  TCL0,1,2,3  : user tcl scripts. see `tcl/create_vitis_project.tcl`
 #  ARCH        : microblaze or aarch64 or aarch32 or armr5
+#  BIT         : bitstream file path. If an XSA file path is specified, the BIT must also be specified.
 #
 # Targets:
 #  create_${project} : Generate workspace / platform / application
 #  ${projecte}       : Build
 #  clear_${project}  : Delete workspace
 #  open_${project}   : Open workspace in Vitis
+#  update_bit_${project}: run updatemem
 #
 function(add_vitis_hw_project project)
   cmake_parse_arguments(
     VARG
-    "C;CPP"
-    "XSA;PROC;ARCH;OS;DIR;DOMAIN_NAME;DOMAIN_LONG;TEMPLATE"
+    "C;CPP;DEBUG;RELEASE"
+    "XSA;MEM;BIT;PROC;ARCH;OS;DIR;DOMAIN_NAME;DOMAIN_LONG;TEMPLATE"
     "SOURCES;DEPENDS;INCDIR;DEFINE;TCL0;TCL1;TCL2;TCL3"
     ${ARGN}
   )
@@ -189,6 +201,16 @@ function(add_vitis_hw_project project)
   else()
     set(LANG "{c++}")
     set(DEFAULT_TEMPLATE ${VITIS_CPP_TEMPLATE})
+  endif()
+
+  # Default build config
+  set(build_mode Release)
+  if (VARG_DEBUG)
+    if(VARG_RELEASE)
+      message(FATAL_ERROR "Both RELEASE and DEBUG are defined in ${project}")
+    endif()
+
+    set(build_mode Debug)
   endif()
 
   # select arch
@@ -273,8 +295,16 @@ function(add_vitis_hw_project project)
   # set project directory
   set(PRJDIR ${workspace}/${project})
   set(PRJFILE ${PRJDIR}/.project)
-  set(BITSTREAM ${PRJDIR}/_ide/bitstream/${platform_name}.bit)
-
+  set(DebugELF ${PRJDIR}/Debug/${project}.elf)
+  set(ReleaseELF ${PRJDIR}/Release/${project}.elf)
+  if (${build_mode} STREQUAL "Debug")
+    set(ELF ${DebugELF})
+  else()
+    set(ELF ${ReleaseELF})
+  endif()
+  set(bit_file ${PRJDIR}/_ide/bitstream/${platform_name}.bit)
+  set(mmi_file ${PRJDIR}/_ide/bitstream/${platform_name}.mmi)
+  set(UPDATE_BITSTREAM ${workspace}/${project}.bit)
 
   # fix relative path
   vcmu_map_abs_path(VARG_SOURCES SRC_LIST)
@@ -286,10 +316,14 @@ function(add_vitis_hw_project project)
 
   # generate environment file
   set(ENV_FILE ${CMAKE_CURRENT_BINARY_DIR}/env_vitis_${project}.tcl)
+  set(PROC_FILE ${CMAKE_CURRENT_BINARY_DIR}/proc_vitis_${project}.tcl)
   vcmu_env_file_init(${ENV_FILE})
   vcmu_env_file_add_var(${ENV_FILE} ws "${workspace}")
   vcmu_env_file_add_var(${ENV_FILE} project "${project}")
+  vcmu_env_file_add_var(${ENV_FILE} build_mode "${build_mode}")
   vcmu_env_file_add_var(${ENV_FILE} xsa_file "${xsa_file}")
+  vcmu_env_file_add_var(${ENV_FILE} mmi_file "${mmi_file}")
+  vcmu_env_file_add_var(${ENV_FILE} bit_file "${bit_file}")
   vcmu_env_file_add_var(${ENV_FILE} template "${template}")
   vcmu_env_file_add_var(${ENV_FILE} lang "${LANG}")
   vcmu_env_file_add_var(${ENV_FILE} os "${os}")
@@ -306,21 +340,33 @@ function(add_vitis_hw_project project)
   vcmu_env_file_add_list(${ENV_FILE} tcl3 TCL3)
   vcmu_env_file_add_list(${ENV_FILE} incdir INCDIR)
   vcmu_env_file_add_list(${ENV_FILE} defs VARG_DEFINE)
+  vcmu_env_file_add_var(${ENV_FILE} proc_file "${PROC_FILE}")
 
   ############## define targets ########################################
   # generate workspace and project
   add_custom_target(create_${project} SOURCES ${PRJFILE})
   add_custom_command(
-    OUTPUT ${PRJFILE}
+    OUTPUT ${PRJFILE} ${PROC_FILE}
     DEPENDS ${DEPENDS}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${workspace}
     COMMAND ${VITIS_XSCT} ${VITIS_TCL_DIR}/create_vitis_project.tcl ${ENV_FILE}
   )
 
   # build project
-  add_custom_target(${project}
+  add_custom_target(${project} SOURCES ${ELF})
+  add_custom_command(
+    OUTPUT ${ELF}
     DEPENDS create_${project}
     COMMAND ${VITIS_XSCT} ${VITIS_TCL_DIR}/vitis_build.tcl ${ENV_FILE}
+  )
+
+  # update bitstream
+  add_custom_target(update_bit_${project} SOURCES ${UPDATE_BITSTREAM})
+  add_custom_command(
+    OUTPUT ${UPDATE_BITSTREAM}
+    DEPENDS ${ELF} ${mmi_file} ${PROC_FILE}
+    COMMAND ${VITIS_RUN_UPDATEMEM}
+      ${VITIS_UPDATEMEM} ${mmi_file} ${bit_file} ${ELF} ${UPDATE_BITSTREAM} ${PROC_FILE}
   )
 
   # show processor
@@ -394,6 +440,7 @@ function(add_vitis_hw_project project)
       PROJECT_DIR    ${PRJDIR}
       PROJECT_FILE   ${PRJFILE}
       TOP_BITSTREAM  ${BITSTREAM}
+      UPDATE_BITSTREAM  ${UPDATE_BITSTREAM}
       # TOP_LTX        ${LTX}
       IMPL_TARGET    ${project}
       XSA            "${xsa_file}"

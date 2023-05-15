@@ -19,6 +19,7 @@ proc runImpl {run j} {
   set stat [get_property STATUS $run]
   if { $isImpl == 1 && $isIncArchive == 1 && $stat != "write_bitstream Complete!" } {
       puts "INFO: Run $name"
+      reset_runs $run
       launch_runs $run -jobs $j -to_step write_bitstream
       wait_on_run $run
       set stat [get_property STATUS $run]

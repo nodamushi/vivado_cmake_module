@@ -216,7 +216,7 @@ function(add_vivado_project project)
   if(NOT VARG_IMPLEMENTS)
     set(VARG_IMPLEMENTS ${VIVADO_DEFAULT_IMPL})
   endif()
-  list(GET ${VARG_IMPLEMENTS} 0 VARG_DEFAULT_IMPL)
+  list(GET VARG_IMPLEMENTS 0 VARG_DEFAULT_IMPL)
 
 
   set(ENV_FILE ${CMAKE_CURRENT_BINARY_DIR}/env_vivado_${project}.tcl)
@@ -294,15 +294,6 @@ function(add_vivado_project project)
         -tclargs ${ENV_FILE} ${JOB_SIZE}
   )
 
-  # delete project target
-  add_custom_target(clear_${project}
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${PRJDIR}
-    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/vivado*
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/.Xil
-    COMMAND ${CMAKE_COMMAND} -E remove ${WD}/vivado*
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${WD}/.Xil
-  )
-
   # write bitstream
   add_custom_target(program_${project}
     DEPENDS impl_${project}
@@ -357,6 +348,16 @@ function(add_vivado_project project)
         ${project}
         ${PRJDIR}
         ${XSA_FILE}
+  )
+
+  # delete project target
+  add_custom_target(clear_${project}
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${PRJDIR}
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/vivado*
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/.Xil
+    COMMAND ${CMAKE_COMMAND} -E remove ${WD}/vivado*
+    COMMAND ${CMAKE_COMMAND} -E remove ${XSA_FILE}
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${WD}/.Xil
   )
 
   # set target property
