@@ -7,6 +7,10 @@ set env_file      [lindex $argv 0]
 puts "INFO: \[TCL\] set environments for tcl script, $env_file"
 source $env_file
 
+if { "$use_beta_device" != "" } {
+  puts "INFO: \[Create TCL\] Enable beta device. $use_beta_device"
+  enable_beta_device $use_beta_device
+}
 source $tcl_directory/_source_find_bd.tcl
 
 puts "${project_directory}/${project_name}.xpr"

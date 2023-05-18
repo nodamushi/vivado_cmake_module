@@ -3,16 +3,21 @@
 #
 #  target: vivado
 #
-set project_name      [lindex $argv 0]
-set project_directory [lindex $argv 1]
-set tcl_directory     [lindex $argv 2]
-set target_name       [lindex $argv 3]
-set rep_save_dir      [lindex $argv 4]
-set design_name       [lindex $argv 5]
+set env_file          [lindex $argv 0]
+set target_name       [lindex $argv 1]
+set rep_save_dir      [lindex $argv 2]
+
+puts "INFO: \[TCL\] set environments for tcl script, $env_file"
+source $env_file
+
+if { "$use_beta_device" != "" } {
+  puts "INFO: \[Create TCL\] Enable beta device. $use_beta_device"
+  enable_beta_device $use_beta_device
+}
 
 # find bd file
 source $tcl_directory/_source_find_bd.tcl
-set bd_file [getBdFile "${project_directory}/${project_name}.srcs/sources_1/bd" $design_name]
+set bd_file [getBdFile "${project_directory}/${project_name}.srcs/sources_1/bd" ""]
 if { "$bd_file" == "" } {
   exit 1
 }
@@ -38,6 +43,7 @@ proc do { prj bd_file target_name save_file} {
   if { $save_file != 0 } {
     set fid [open $save_file w]
   } else {
+    puts ""
     puts "INFO: if you want to save result as csv, set REPORT_CSV variable"
     puts "    :   exp) make REPORT_CSV=foobar.csv $target_name"
   }

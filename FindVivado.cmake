@@ -328,12 +328,9 @@ function(add_vivado_project project)
         -notrace
         -source ${VIVADO_TCL_DIR}/report_addr.tcl
         -tclargs
-          ${project}
-          ${PRJDIR}
-          ${VIVADO_TCL_DIR}
+          ${ENV_FILE}
           report_addr_${project}
           ${WD}
-          ""
     )
   endif()
 

@@ -8,6 +8,11 @@ set jobsize       [lindex $argv 1]
 puts "INFO: set environments for tcl script, $env_file"
 source $env_file
 
+if { "$use_beta_device" != "" } {
+  puts "INFO: \[Create TCL\] Enable beta device. $use_beta_device"
+  enable_beta_device $use_beta_device
+}
+
 puts "INFO: open_project ${project_directory}/${project_name}.xpr"
 open_project ${project_directory}/${project_name}.xpr
 
