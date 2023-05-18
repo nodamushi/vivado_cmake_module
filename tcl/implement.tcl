@@ -17,18 +17,25 @@ puts "INFO: open_project ${project_directory}/${project_name}.xpr"
 open_project ${project_directory}/${project_name}.xpr
 
 
+proc is_not_completed {use_pdi stat} {
+  return [expr {
+    ($use_pdi && $stat != "write_device_image Complete!") \
+    || (!$use_pdi && $stat != "write_bitstream Complete!")
+  }]
+}
+
 proc runImpl {run j} {
   set name [get_property NAME $run]
   set isImpl [get_property IS_IMPLEMENTATION  $run]
   set isIncArchive [get_property INCLUDE_IN_ARCHIVE $run]
   set stat [get_property STATUS $run]
-  if { $isImpl == 1 && $isIncArchive == 1 && $stat != "write_bitstream Complete!" } {
+  if { $isImpl && $isIncArchive && [is_not_completed $use_pdi $stat] } {
       puts "INFO: Run $name"
       reset_runs $run
       launch_runs $run -jobs $j -to_step write_bitstream
       wait_on_run $run
       set stat [get_property STATUS $run]
-      if {$stat != "write_bitstream Complete!"} {
+      if {[is_not_completed $use_pdi $stat]} {
         puts "------------- Fail implements:$name: $stat --------------"
         exit 1
       }

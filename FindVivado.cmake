@@ -108,6 +108,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 #    [BOARD_REPO <directory>...]
 #    [IMPLEMENTS <implimentation name>...]
 #    [BETA   <beta device pattern>]
+#    [PDI]
 # )
 #
 # Define Targets:
@@ -162,11 +163,12 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 #  IMPLEMENTS : impelmentation name list
 #  BOARD_REPO : set_param board.repoPaths
 #  BETA       : enable_beta_device command arguments.
+#  PDI        : PDI file(*.pdi) is generated, used for Versal instead of bitstream.
 #
 function(add_vivado_project project)
   cmake_parse_arguments(
     VARG
-    ""
+    "PDI"
     "BOARD;DIR;TOP;DFX;WD"
     "RTL;CONSTRAINT;IP;DEPENDS;IMPLEMENTS;TCL0;TCL1;TCL2;BOARD_REPO;DESIGN;BETA;"
     ${ARGN}
@@ -191,6 +193,18 @@ function(add_vivado_project project)
   else()
     set(WD ${VARG_WD})
   endif()
+
+  # filename extension
+  if (NOT VARG_PDI)
+    set(BIT_EXT "bit")
+    set(PDI FALSE)
+    set(USE_PDI 0)
+  else()
+    set(BIT_EXT "pdi")
+    set(PDI TRUE)
+    set(USE_PDI 1)
+  endif()
+  set(DBG_EXT "ltx")
 
   # fix relative path
   vcmu_map_abs_path(VARG_BOARD_REPO BOARD_REPO)
@@ -221,7 +235,7 @@ function(add_vivado_project project)
   endif()
   list(GET VARG_IMPLEMENTS 0 VARG_DEFAULT_IMPL)
 
-
+  # Generate variable TCL file
   set(ENV_FILE ${CMAKE_CURRENT_BINARY_DIR}/env_vivado_${project}.tcl)
   vcmu_env_file_init(${ENV_FILE})
   vcmu_env_file_add_list(${ENV_FILE} rtl RTL_LIST)
@@ -242,6 +256,7 @@ function(add_vivado_project project)
   vcmu_env_file_add_var(${ENV_FILE} root "${VIVADO_PROJECT_REPOGITORY_ROOT_DIR}")
   vcmu_env_file_add_list(${ENV_FILE} impls VARG_IMPLEMENTS)
   vcmu_env_file_add_var(${ENV_FILE} use_beta_device "${VARG_BETA}")
+  vcmu_env_file_add_var(${ENV_FILE} use_pdi ${USE_PDI})
 
   # define ${project} target(create Vivado project)
   add_custom_target(${project} SOURCES ${PRJFILE})
@@ -280,8 +295,8 @@ function(add_vivado_project project)
 
   # synthesis,impl,gen bitstream target
   set(RUNS_DIR ${PRJDIR}/${project}.runs)
-  set(BITSTREAM ${RUNS_DIR}/${VARG_DEFAULT_IMPL}/${VARG_TOP}.bit)
-  set(LTX ${RUNS_DIR}/${VARG_DEFAULT_IMPL}/${VARG_TOP}.ltx)
+  set(BITSTREAM ${RUNS_DIR}/${VARG_DEFAULT_IMPL}/${VARG_TOP}.${BIT_EXT})
+  set(LTX ${RUNS_DIR}/${VARG_DEFAULT_IMPL}/${VARG_TOP}.${DBG_EXT})
   get_vivado_job_size(JOB_SIZE)
 
   #    run impl: impl_${project} target
@@ -376,6 +391,7 @@ function(add_vivado_project project)
       IMPL           "${VARG_DEFAULT_IMPL}"
       IMPLS          "${VARG_IMPLEMENTS}"
       XSA            ${XSA_FILE}
+      PDI            ${PDI}
   )
 endfunction()
 

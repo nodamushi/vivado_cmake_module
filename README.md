@@ -26,7 +26,7 @@ include(FetchContent)
 FetchContent_Declare(
   vivado_cmake_module
   GIT_REPOSITORY  https://github.com/nodamushi/vivado_cmake_module.git
-  GIT_TAG v0.0.9
+  GIT_TAG v0.0.10
 )
 FetchContent_MakeAvailable(vivado_cmake_module)
 list(APPEND CMAKE_MODULE_PATH ${vivado_cmake_module_SOURCE_DIR})
@@ -128,6 +128,7 @@ add_vivado_project(
    [IMPLEMENTS <implimentation name>...]
    [BOARD_REPO <directory>...]
    [BETA   <beta device pattern>]
+   [PDI]
 )
 ```
 
@@ -155,6 +156,7 @@ add_vivado_project(
 - `IMPLEMENTS` : impelmentation name list
 - `BOARD_REPO` : set_param board.repoPaths
 - `BETA      ` : enable_beta_device command arguments. `*` is all beta device enable.
+- `PDI       ` : for Versal. Indicates that Vivado generates *.pdi files.
 
 #### Define Targets
 
