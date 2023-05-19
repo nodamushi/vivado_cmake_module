@@ -439,7 +439,7 @@ function(add_vitis_hw_project project)
       PROJECT_NAME   ${project}
       PROJECT_DIR    ${PRJDIR}
       PROJECT_FILE   ${PRJFILE}
-      TOP_BITSTREAM  ${BITSTREAM}
+      TOP_BITSTREAM  ${bit_file}
       UPDATE_BITSTREAM  ${UPDATE_BITSTREAM}
       # TOP_LTX        ${LTX}
       IMPL_TARGET    ${project}
