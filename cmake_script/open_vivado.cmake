@@ -1,0 +1,5 @@
+if("${MODE}" EQUAL "SHOW")
+  execute_process(COMMAND "${VIVADO_BIN}" "${PRJFILE}")
+else()
+  execute_process(COMMAND "${VIVADO_BIN}" "${PRJFILE}" OUTPUT_QUIET)
+endif()

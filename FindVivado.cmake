@@ -14,6 +14,7 @@
 #default value
 set(VIVADO_DEFAULT_IMPL "impl_1" CACHE STRING "default vivado impl name")
 set(VIVADO_JOB "0" CACHE STRING "vivado implement job size")
+set(VIVADO_OPEN_MODE QUIET CACHE STRING "When open_project is executed, standard output is produced or not.If standard output is produced, specify SHOW.")
 
 include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 
@@ -53,7 +54,7 @@ ProcessorCount(VIVADO_PROCESSOR_COUNT)
 mark_as_advanced(VIVADO_BIN_DIR VIVADO_CMAKE_DIR VIVADO_TCL_DIR VIVADO_PROCESSOR_COUNT)
 
 
-
+set(CMAKE_SCRIPT_DIR ${CMAKE_CURRENT_LIST_DIR}/cmake_script)
 
 
 macro (get_vivado_job_size OUTVAR)
@@ -286,7 +287,7 @@ function(add_vivado_project project)
 
   # open project in vivado
   add_custom_target(open_${project}
-    COMMAND ${VIVADO_EXE} ${PRJFILE} &
+    COMMAND ${CMAKE_COMMAND} "-DVIVADO_BIN=${VIVADO_EXE}" "-DPRJFILE=${PRJFILE}" "-DMODE=${VIVADO_OPEN_MODE}" -P ${CMAKE_SCRIPT_DIR}/open_vivado.cmake &
   )
 
   # get default impl name
