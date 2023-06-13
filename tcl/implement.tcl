@@ -18,10 +18,11 @@ open_project ${project_directory}/${project_name}.xpr
 
 
 proc is_not_completed {stat use_pdi} {
-  return [expr {
-    ($use_pdi && $stat != "write_device_image Complete!") \
-    || (!$use_pdi && $stat != "write_bitstream Complete!")
+  set ok [expr {
+    ($use_pdi == 1 && $stat == "write_device_image Complete!") \
+    || ($use_pdi == 0 && $stat == "write_bitstream Complete!")
   }]
+  return [expr { ! $ok }]
 }
 
 proc runImpl {run j use_pdi} {
@@ -35,7 +36,7 @@ proc runImpl {run j use_pdi} {
       launch_runs $run -jobs $j -to_step write_bitstream
       wait_on_run $run
       set stat [get_property STATUS $run]
-      if {[is_not_completed $use_pdi $stat]} {
+      if {[is_not_completed $stat $use_pdi]} {
         puts "------------- Fail implements:$name: $stat --------------"
         exit 1
       }
