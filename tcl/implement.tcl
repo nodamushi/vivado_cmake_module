@@ -19,8 +19,8 @@ open_project ${project_directory}/${project_name}.xpr
 
 proc is_not_completed {stat use_pdi} {
   return [expr {
-    ($use_pdi && $stat != "write_device_image Complete!") \
-    || (!$use_pdi && $stat != "write_bitstream Complete!")
+    ($use_pdi == 1 && $stat != "write_device_image Complete!") \
+    || ($use_pdi == 0 && $stat != "write_bitstream Complete!")
   }]
 }
 
